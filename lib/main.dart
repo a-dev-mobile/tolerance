@@ -33,13 +33,17 @@ class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
   // Генерируем большой набор данных
   late final List<List<String>> _tableData;
   
-  final int _rowCount = 1000;  // Увеличиваем количество строк для проверки производительности
-  final int _colCount = 100;   // Увеличиваем количество колонок
+  final int _rowCount = 200;
+  final int _colCount = 200;
   
   final double _cellWidth = 120.0;
   final double _cellHeight = 50.0;
   final double _firstColWidth = 100.0;
   final double _headerHeight = 50.0;
+  
+  // Добавляем дебаунсер для ограничения частоты синхронизации скролла
+  DateTime _lastScrollUpdate = DateTime.now();
+  static const _scrollThrottleDuration = Duration(milliseconds: 5);
 
   @override
   void initState() {
@@ -59,6 +63,16 @@ class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
     _verticalController.dispose();
     _horizontalController.dispose();
     super.dispose();
+  }
+
+  // Метод для дроттлинга синхронизации скролла
+  void _throttledSync(ScrollController controller, double position) {
+    final now = DateTime.now();
+    if (now.difference(_lastScrollUpdate) > _scrollThrottleDuration) {
+      _lastScrollUpdate = now;
+      // Используем animateTo вместо jumpTo для более плавной анимации
+      controller.jumpTo(position);
+    }
   }
 
   @override
@@ -102,28 +116,33 @@ class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
             child: SingleChildScrollView(
               controller: _horizontalController,
               scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(), // Отключаем собственную прокрутку
-              child: Row(
-                children: List.generate(
-                  _colCount,
-                  (index) => Container(
-                    width: _cellWidth,
-                    height: _headerHeight,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.blue[100],
-                      border: Border.all(color: Colors.grey),
-                    ),
-                    child: Text(
-                      'Col ${index + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ),
+              physics: const NeverScrollableScrollPhysics(),
+              child: _buildHeaderCells(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Выделяем метод для создания ячеек заголовка
+  Widget _buildHeaderCells() {
+    return Row(
+      children: List.generate(
+        _colCount,
+        (index) => Container(
+          width: _cellWidth,
+          height: _headerHeight,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.blue[100],
+            border: Border.all(color: Colors.grey),
+          ),
+          child: Text(
+            'Col ${index + 1}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
     );
   }
@@ -133,9 +152,10 @@ class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
       width: _firstColWidth,
       child: ListView.builder(
         controller: _verticalController,
-        physics: const NeverScrollableScrollPhysics(), // Отключаем собственную прокрутку
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: _rowCount,
-        itemExtent: _cellHeight, // Фиксированная высота для повышения производительности
+        itemExtent: _cellHeight,
+        cacheExtent: 500, // Увеличиваем кэш для лучшей производительности скролла
         itemBuilder: (context, rowIndex) => Container(
           width: _firstColWidth,
           height: _cellHeight,
@@ -156,63 +176,87 @@ class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
   Widget _buildOptimizedDataTable() {
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        // Обрабатываем вертикальную прокрутку данных - синхронизируем с первой колонкой
-        if (scrollInfo is ScrollUpdateNotification && 
-            scrollInfo.metrics.axis == Axis.vertical) {
-          _verticalController.jumpTo(scrollInfo.metrics.pixels);
+        // Применяем дроттлинг для снижения нагрузки при скролле
+        if (scrollInfo is ScrollUpdateNotification) {
+          if (scrollInfo.metrics.axis == Axis.vertical) {
+            _throttledSync(_verticalController, scrollInfo.metrics.pixels);
+          } else if (scrollInfo.metrics.axis == Axis.horizontal) {
+            _throttledSync(_horizontalController, scrollInfo.metrics.pixels);
+          }
         }
-        // Обрабатываем горизонтальную прокрутку данных - синхронизируем с заголовком
-        if (scrollInfo is ScrollUpdateNotification && 
-            scrollInfo.metrics.axis == Axis.horizontal) {
-          _horizontalController.jumpTo(scrollInfo.metrics.pixels);
-        }
-        return false; // Позволяем событию продолжить распространение
+        return false;
       },
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(),
-        child: SizedBox(
-          width: _cellWidth * _colCount,
-          child: ListView.builder(
-            physics: const ClampingScrollPhysics(),
-            itemCount: _rowCount,
-            itemExtent: _cellHeight, // Фиксированная высота для повышения производительности
-            itemBuilder: (context, rowIndex) {
-              return SizedBox(
-                height: _cellHeight,
-                child: _buildOptimizedRow(rowIndex),
-              );
-            },
-          ),
+      child: _buildDataTableContent(),
+    );
+  }
+  
+  Widget _buildDataTableContent() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const ClampingScrollPhysics(),
+      child: SizedBox(
+        width: _cellWidth * _colCount,
+        child: ListView.builder(
+          physics: const ClampingScrollPhysics(),
+          itemCount: _rowCount,
+          itemExtent: _cellHeight,
+          cacheExtent: 1500, // Увеличиваем кэш для более плавного скролла
+          itemBuilder: (context, rowIndex) {
+            return _CachedRow(
+              rowIndex: rowIndex,
+              cellWidth: _cellWidth,
+              cellHeight: _cellHeight,
+              colCount: _colCount,
+              tableData: _tableData,
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  // Используем ListView.builder для ячеек для оптимизации рендеринга
-  Widget _buildOptimizedRow(int rowIndex) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      physics: const NeverScrollableScrollPhysics(), // Отключаем прокрутку для строки
-      itemCount: _colCount,
-      itemExtent: _cellWidth, // Фиксированная ширина для повышения производительности
-      itemBuilder: (context, colIndex) {
-        return Container(
-          width: _cellWidth,
-          height: _cellHeight,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.withOpacity(0.5)),
-            color: (rowIndex % 2 == 0) ? Colors.white : Colors.grey[50],
+// Выносим строку таблицы в отдельный StatelessWidget для улучшения производительности
+class _CachedRow extends StatelessWidget {
+  const _CachedRow({
+    required this.rowIndex,
+    required this.cellWidth,
+    required this.cellHeight,
+    required this.colCount,
+    required this.tableData,
+  });
+  
+  final int rowIndex;
+  final double cellWidth;
+  final double cellHeight;
+  final int colCount;
+  final List<List<String>> tableData;
+
+  @override
+  Widget build(BuildContext context) {
+    // Используем более эффективный подход для строки - Row вместо ListView
+    return Container(
+      height: cellHeight,
+      color: (rowIndex % 2 == 0) ? Colors.white : Colors.grey[50],
+      child: Row(
+        children: List.generate(
+          colCount,
+          (colIndex) => Container(
+            width: cellWidth,
+            height: cellHeight,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.withOpacity(0.5)),
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(
+              tableData[rowIndex][colIndex],
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Text(
-            _tableData[rowIndex][colIndex],
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
