@@ -30,11 +30,21 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file("keystore.jks")
+            storePassword = System.getenv("STORE_PASSWORD")
+        }
+    }
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            // Включение отладочных символов
+            ndk {
+                debugSymbolLevel = "FULL"  // или "SYMBOL_TABLE" для меньшего размера
+            }
         }
     }
 }

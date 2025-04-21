@@ -1,5 +1,20 @@
+// Содержит значения допусков для различных интервалов размеров
+
+// Класс для хранения значений допусков
+
 class ToleranceConstants {
-  // Tolerance values for different size intervals
+  // Метод для получения допуска по интервалу и коду допуска
+  static String getTolerance(String interval, String toleranceCode) {
+    if (toleranceValues.containsKey(interval) &&
+        toleranceValues[interval]!.containsKey(toleranceCode)) {
+      return toleranceValues[interval]![toleranceCode]!;
+    }
+    return "";
+  }
+
+  // Таблица допусков, индексированная по интервалам размеров
+  // Ключ - строка интервала (например "0 > 3")
+  // Значение - карта допусков {код допуска: значение допуска}
   static const Map<String, Map<String, String>> toleranceValues = {
     " 0 > 3": {
       "A10": "+0.310\n+0.270",
