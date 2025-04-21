@@ -1,262 +1,258 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_tolerance/ToleranceConstants.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void setThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Двусторонняя прокрутка таблицы',
+      title: 'Допуски машиностроительные',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        brightness: Brightness.light,
       ),
-      home: const OptimizedDataTableExample(),
+      darkTheme: ThemeData(
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1F1F1F)),
+      ),
+      themeMode: _themeMode,
+      home: ToleranceTablePage(setThemeMode: setThemeMode),
     );
   }
 }
 
-class OptimizedDataTableExample extends StatefulWidget {
-  const OptimizedDataTableExample({Key? key}) : super(key: key);
+class ToleranceTablePage extends StatefulWidget {
+  final Function(ThemeMode) setThemeMode;
+
+  const ToleranceTablePage({Key? key, required this.setThemeMode})
+    : super(key: key);
 
   @override
-  State<OptimizedDataTableExample> createState() => _OptimizedDataTableExampleState();
+  State<ToleranceTablePage> createState() => _ToleranceTablePageState();
 }
 
-class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
-  final ScrollController _verticalController = ScrollController();
-  final ScrollController _horizontalController = ScrollController();
-  
-  // Генерируем большой набор данных
-  late final List<List<String>> _tableData;
-  
-  final int _rowCount = 200;
-  final int _colCount = 200;
-  
-  final double _cellWidth = 120.0;
-  final double _cellHeight = 50.0;
-  final double _firstColWidth = 100.0;
-  final double _headerHeight = 50.0;
-  
-  // Добавляем дебаунсер для ограничения частоты синхронизации скролла
-  DateTime _lastScrollUpdate = DateTime.now();
-  static const _scrollThrottleDuration = Duration(milliseconds: 5);
+class _ToleranceTablePageState extends State<ToleranceTablePage> {
+  late ToleranceDataSource _toleranceDataSource;
+  final ScrollController _scrollController = ScrollController();
+  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
-    // Инициализируем данные только один раз
-    _tableData = List.generate(
-      _rowCount,
-      (rowIndex) => List.generate(
-        _colCount,
-        (colIndex) => 'Ячейка R${rowIndex + 1}C${colIndex + 1}',
-      ),
-    );
+    _toleranceDataSource = ToleranceDataSource();
+    // Проверяем текущую тему при инициализации
+    _isDarkMode =
+        WidgetsBinding.instance.window.platformBrightness == Brightness.dark;
   }
-  
+
   @override
   void dispose() {
-    _verticalController.dispose();
-    _horizontalController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Метод для дроттлинга синхронизации скролла
-  void _throttledSync(ScrollController controller, double position) {
-    final now = DateTime.now();
-    if (now.difference(_lastScrollUpdate) > _scrollThrottleDuration) {
-      _lastScrollUpdate = now;
-      // Используем animateTo вместо jumpTo для более плавной анимации
-      controller.jumpTo(position);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Определяем текущую тему
+    final currentBrightness = Theme.of(context).brightness;
+    _isDarkMode = currentBrightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Оптимизированная таблица'),
-      ),
-      body: Column(
-        children: [
-          _buildHeaderRow(),
-          Expanded(
-            child: Row(
-              children: [
-                _buildFirstColumn(),
-                Expanded(child: _buildOptimizedDataTable()),
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return <Widget>[
+            SliverAppBar(
+              title: const Text('Допуски машиностроительные'),
+              pinned: false, // Не фиксировать верхнюю часть аппбара
+              floating:
+                  true, // Позволяет аппбару появляться сразу при прокрутке вверх
+              snap: true, // Аппбар автоматически расширяется или сворачивается
+              forceElevated: innerBoxIsScrolled,
+              actions: [
+                // Кнопка переключения темы
+                IconButton(
+                  icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                  onPressed: () {
+                    setState(() {
+                      _isDarkMode = !_isDarkMode;
+                      // Применяем тему ко всему приложению
+                      final themeMode =
+                          _isDarkMode ? ThemeMode.dark : ThemeMode.light;
+                      widget.setThemeMode(themeMode);
+                    });
+                  },
+                ),
               ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(4.0),
+                child: Container(
+                  height: 4.0,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withOpacity(0.5),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ];
+        },
+        body: SfDataGrid(
+          source: _toleranceDataSource,
+          columnWidthMode: ColumnWidthMode.auto,
+          gridLinesVisibility: GridLinesVisibility.both,
+          headerGridLinesVisibility: GridLinesVisibility.both,
+          frozenColumnsCount: 1, // Закрепляем первую колонку (интервалы)
+          allowSorting: false,
+          allowFiltering: false,
+          allowSwiping: false,
+          allowEditing: false,
+          isScrollbarAlwaysShown: true,
+          columns: _buildGridColumns(),
+        ),
       ),
     );
   }
 
-  Widget _buildHeaderRow() {
-    return SizedBox(
-      height: _headerHeight,
-      child: Row(
-        children: [
-          Container(
-            width: _firstColWidth,
-            height: _headerHeight,
+  List<GridColumn> _buildGridColumns() {
+    // Получаем все уникальные имена колонок из данных
+    Set<String> uniqueColumnNames = {"Interval"};
+    ToleranceConstants.toleranceValues.forEach((interval, values) {
+      for (var key in values.keys) {
+        uniqueColumnNames.add(key);
+      }
+    });
+
+    List<String> sortedColumnNames = uniqueColumnNames.toList()..sort();
+    // Перемещаем "Interval" в начало списка
+    sortedColumnNames.remove("Interval");
+    sortedColumnNames.insert(0, "Interval");
+
+    List<GridColumn> columns = [];
+
+    // Создаем колонки на основе ключей из данных
+    for (String columnName in sortedColumnNames) {
+      columns.add(
+        GridColumn(
+          columnName: columnName,
+          label: Container(
+            padding: const EdgeInsets.all(8.0),
+            color: Theme.of(context).primaryColor.withOpacity(0.2),
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.blue[100],
-              border: Border.all(color: Colors.grey),
-            ),
-            child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              child: _buildHeaderCells(),
+            child: Text(
+              columnName == "Interval" ? 'Interval\n(mm)' : columnName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // Выделяем метод для создания ячеек заголовка
-  Widget _buildHeaderCells() {
-    return Row(
-      children: List.generate(
-        _colCount,
-        (index) => Container(
-          width: _cellWidth,
-          height: _headerHeight,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            border: Border.all(color: Colors.grey),
-          ),
-          child: Text(
-            'Col ${index + 1}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          width: columnName == "Interval" ? 100 : 80, // Ширина колонки
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildFirstColumn() {
-    return SizedBox(
-      width: _firstColWidth,
-      child: ListView.builder(
-        controller: _verticalController,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _rowCount,
-        itemExtent: _cellHeight,
-        cacheExtent: 500, // Увеличиваем кэш для лучшей производительности скролла
-        itemBuilder: (context, rowIndex) => Container(
-          width: _firstColWidth,
-          height: _cellHeight,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            border: Border.all(color: Colors.grey),
-          ),
-          child: Text(
-            'Row ${rowIndex + 1}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptimizedDataTable() {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        // Применяем дроттлинг для снижения нагрузки при скролле
-        if (scrollInfo is ScrollUpdateNotification) {
-          if (scrollInfo.metrics.axis == Axis.vertical) {
-            _throttledSync(_verticalController, scrollInfo.metrics.pixels);
-          } else if (scrollInfo.metrics.axis == Axis.horizontal) {
-            _throttledSync(_horizontalController, scrollInfo.metrics.pixels);
-          }
-        }
-        return false;
-      },
-      child: _buildDataTableContent(),
-    );
-  }
-  
-  Widget _buildDataTableContent() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const ClampingScrollPhysics(),
-      child: SizedBox(
-        width: _cellWidth * _colCount,
-        child: ListView.builder(
-          physics: const ClampingScrollPhysics(),
-          itemCount: _rowCount,
-          itemExtent: _cellHeight,
-          cacheExtent: 1500, // Увеличиваем кэш для более плавного скролла
-          itemBuilder: (context, rowIndex) {
-            return _CachedRow(
-              rowIndex: rowIndex,
-              cellWidth: _cellWidth,
-              cellHeight: _cellHeight,
-              colCount: _colCount,
-              tableData: _tableData,
-            );
-          },
-        ),
-      ),
-    );
+    return columns;
   }
 }
 
-// Выносим строку таблицы в отдельный StatelessWidget для улучшения производительности
-class _CachedRow extends StatelessWidget {
-  const _CachedRow({
-    required this.rowIndex,
-    required this.cellWidth,
-    required this.cellHeight,
-    required this.colCount,
-    required this.tableData,
-  });
-  
-  final int rowIndex;
-  final double cellWidth;
-  final double cellHeight;
-  final int colCount;
-  final List<List<String>> tableData;
+class ToleranceDataSource extends DataGridSource {
+  late List<DataGridRow> _rows;
+  late List<String> _columnNames;
+
+  ToleranceDataSource() {
+    _initDataGridRows();
+  }
+
+  void _initDataGridRows() {
+    // Сначала определяем все уникальные колонки из данных
+    Set<String> uniqueColumnNames = {"Interval"};
+    ToleranceConstants.toleranceValues.forEach((interval, values) {
+      for (var key in values.keys) {
+        uniqueColumnNames.add(key);
+      }
+    });
+
+    _columnNames = uniqueColumnNames.toList()..sort();
+    // Перемещаем "Interval" в начало списка
+    _columnNames.remove("Interval");
+    _columnNames.insert(0, "Interval");
+
+    // Создаем строки данных
+    _rows = [];
+
+    ToleranceConstants.toleranceValues.forEach((interval, tolerances) {
+      List<DataGridCell<String>> cells = [];
+
+      // Для каждой колонки ищем соответствующее значение
+      for (String columnName in _columnNames) {
+        String value = '';
+        if (columnName == "Interval") {
+          value = interval;
+        } else {
+          value = tolerances[columnName] ?? '';
+        }
+
+        cells.add(DataGridCell<String>(columnName: columnName, value: value));
+      }
+
+      _rows.add(DataGridRow(cells: cells));
+    });
+  }
 
   @override
-  Widget build(BuildContext context) {
-    // Используем более эффективный подход для строки - Row вместо ListView
-    return Container(
-      height: cellHeight,
-      color: (rowIndex % 2 == 0) ? Colors.white : Colors.grey[50],
-      child: Row(
-        children: List.generate(
-          colCount,
-          (colIndex) => Container(
-            width: cellWidth,
-            height: cellHeight,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.withOpacity(0.5)),
-            ),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              tableData[rowIndex][colIndex],
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ),
-      ),
+  List<DataGridRow> get rows => _rows;
+
+  @override
+  DataGridRowAdapter buildRow(DataGridRow row) {
+    return DataGridRowAdapter(
+      cells:
+          row.getCells().map<Widget>((cell) {
+            // Особое форматирование для первой колонки с интервалами
+            bool isIntervalColumn = cell.columnName == 'Interval';
+
+            return Container(
+              padding: const EdgeInsets.all(8.0),
+              color:
+                  isIntervalColumn
+                      ? Colors.blue.withOpacity(
+                        0.15,
+                      ) // Более тонкий оттенок для совместимости с темной темой
+                      : Colors.transparent,
+              alignment: Alignment.center,
+              child: Text(
+                cell.value.toString(),
+                style: TextStyle(
+                  fontWeight:
+                      isIntervalColumn ? FontWeight.bold : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
     );
   }
 }
