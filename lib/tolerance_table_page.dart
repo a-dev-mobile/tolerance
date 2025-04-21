@@ -44,9 +44,6 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   
   // Выделенная колонка (результат поиска)
   String? _highlightedColumn;
-  
-  // Таймер для сброса выделения
-  Timer? _highlightTimer;
 
   @override
   void initState() {
@@ -131,9 +128,6 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Удаляем слушатели
     _verticalScrollController.removeListener(_saveScrollPosition);
     _horizontalScrollController.removeListener(_saveScrollPosition);
-    
-    // Останавливаем таймер выделения, если он активен
-    _highlightTimer?.cancel();
     
     // Освобождаем ресурсы
     _verticalScrollController.dispose();
@@ -336,17 +330,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     setState(() {
       _highlightedColumn = columnName;
       
-      // Отменяем предыдущий таймер, если он активен
-      _highlightTimer?.cancel();
-      
-      // Устанавливаем таймер для сброса выделения через 5 секунд
-      _highlightTimer = Timer(const Duration(seconds: 5), () {
-        if (mounted) {
-          setState(() {
-            _highlightedColumn = null;
-          });
-        }
-      });
+
     });
     
     // Используем задержку, чтобы дать время для перестроения колонок с выделением
