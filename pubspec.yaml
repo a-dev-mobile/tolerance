@@ -14,7 +14,8 @@ dependencies:
   flutter:
     sdk: flutter
   syncfusion_flutter_datagrid: ^29.1.38
-
+  shared_preferences: ^2.5.3
+  
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

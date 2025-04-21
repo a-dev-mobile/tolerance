@@ -1,12 +1,13 @@
 // tolerance_table_page.dart - Основная страница с таблицей допусков
 // Содержит виджет страницы и его логику
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tolerance_data_source.dart';
 import 'unit_system.dart';
 import 'value_input_dialog.dart';
+import 'search_dialog.dart';
 
 // Константы для ключей SharedPreferences
 const String _keyScrollPositionX = 'scrollPositionX';
@@ -40,6 +41,12 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   
   // Флаг для отслеживания, загружены ли данные прокрутки
   bool _scrollPositionRestored = false;
+  
+  // Выделенная колонка (результат поиска)
+  String? _highlightedColumn;
+  
+  // Таймер для сброса выделения
+  Timer? _highlightTimer;
 
   @override
   void initState() {
@@ -124,6 +131,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Удаляем слушатели
     _verticalScrollController.removeListener(_saveScrollPosition);
     _horizontalScrollController.removeListener(_saveScrollPosition);
+    
+    // Останавливаем таймер выделения, если он активен
+    _highlightTimer?.cancel();
     
     // Освобождаем ресурсы
     _verticalScrollController.dispose();
@@ -223,6 +233,12 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       snap: true,        // Быстрое появление аппбара при небольшой прокрутке вверх
       forceElevated: innerBoxIsScrolled,
       actions: [
+        // Кнопка поиска допуска
+        IconButton(
+          icon: const Icon(Icons.search),
+          tooltip: 'Найти допуск',
+          onPressed: _showSearchDialog,
+        ),
         // Кнопка переключения единиц измерения
         IconButton(
           icon: Text(
@@ -290,6 +306,79 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     );
   }
   
+  // Отображает диалог поиска допуска
+  Future<void> _showSearchDialog() async {
+    // Получаем список всех допусков (колонок), исключая Interval
+    Set<String> allTolerances = {};
+    _toleranceDataSource.getAllColumnNames(allTolerances);
+    allTolerances.remove("Interval");
+    List<String> tolerancesList = allTolerances.toList()..sort();
+    
+
+    
+    // Небольшая задержка для плавности
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Показываем диалог поиска
+    final String? selectedTolerance = await showSearchDialog(context, tolerancesList);
+    
+    // Если пользователь выбрал допуск
+    if (selectedTolerance != null && mounted) {
+      // Сообщаем пользователю, что перематываем к выбранному допуску
+      
+      
+      _scrollToColumn(selectedTolerance);
+    }
+  }
+  
+  // Прокручивает к указанной колонке и выделяет ее
+  void _scrollToColumn(String columnName) {
+    setState(() {
+      _highlightedColumn = columnName;
+      
+      // Отменяем предыдущий таймер, если он активен
+      _highlightTimer?.cancel();
+      
+      // Устанавливаем таймер для сброса выделения через 5 секунд
+      _highlightTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _highlightedColumn = null;
+          });
+        }
+      });
+    });
+    
+    // Используем задержку, чтобы дать время для перестроения колонок с выделением
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      
+      // Получаем индекс колонки из источника данных
+      int columnIndex = _toleranceDataSource.getColumnIndex(columnName);
+      if (columnIndex == -1) return;
+      
+      // Рассчитываем примерную позицию для прокрутки, учитывая ширину колонок
+      // Первая колонка (Interval) имеет ширину 100, остальные по 80
+      double scrollOffset = 100.0 + (columnIndex - 1) * 80.0;
+      
+      // Прокручиваем горизонтально к колонке, если контроллер инициализирован
+      if (_horizontalScrollController.hasClients) {
+        // Вычитаем половину видимой области, чтобы центрировать колонку
+        double viewportWidth = MediaQuery.of(context).size.width;
+        double targetOffset = scrollOffset - (viewportWidth / 2) + 40; // 40 - половина ширины колонки
+        
+        // Убеждаемся, что не выходим за пределы области прокрутки
+        targetOffset = targetOffset.clamp(0.0, _horizontalScrollController.position.maxScrollExtent);
+        
+        _horizontalScrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+  
   // Обработка нажатия на ячейку
   void _handleCellTap(DataGridCellTapDetails details) {
     // Обрабатываем нажатия только если выбраны миллиметры
@@ -330,18 +419,29 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
     // Создаем колонки на основе ключей из данных
     for (String columnName in sortedColumnNames) {
+      // Определяем, нужно ли выделить эту колонку (результат поиска)
+      bool isHighlighted = _highlightedColumn != null && 
+                           columnName == _highlightedColumn;
+                           
+      Color backgroundColor = isHighlighted 
+          ? Colors.amber.withAlpha(100) // Цвет для выделенной колонки
+          : Theme.of(context).primaryColor.withAlpha(51); // Обычный цвет
+      
       columns.add(
         GridColumn(
           columnName: columnName,
           label: Container(
             padding: const EdgeInsets.all(8.0),
-            color: Theme.of(context).primaryColor.withAlpha(51),
+            color: backgroundColor,
             alignment: Alignment.center,
             child: Text(
               columnName == "Interval" 
                 ? 'Interval\n(mm)'  // Интервалы всегда в мм
                 : columnName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isHighlighted ? Colors.black : null,
+              ),
               textAlign: TextAlign.center,
             ),
           ),

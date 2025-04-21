@@ -68,6 +68,11 @@ class ToleranceDataSource extends DataGridSource {
       }
     });
   }
+  
+  // Получает индекс колонки по её имени
+  int getColumnIndex(String columnName) {
+    return _columnNames.indexOf(columnName);
+  }
 
   // Функция для конвертации значения из мм в другие единицы измерения
   String _convertValue(String mmValue, UnitSystem toUnit) {
