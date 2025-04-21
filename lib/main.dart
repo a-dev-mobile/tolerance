@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_tolerance/tolerance_constants.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import 'dart:math';
 
 // Перечисление единиц измерения, вынесенное на уровень файла
 enum UnitSystem { millimeters, inches, microns }
@@ -103,6 +104,201 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     });
   }
 
+  // Показываем диалог для ввода значения, к которому будет применен допуск
+  void _showValueInputDialog(BuildContext context, String columnName, String toleranceValue) {
+    // Контроллер для текстового поля
+    final TextEditingController controller = TextEditingController();
+    
+    // Переменные для хранения результатов
+    double baseValue = 0.0;
+    String minValueStr = '-';
+    String maxValueStr = '-';
+    String nominalValueStr = '-';
+
+    // Парсим значение допуска
+    List<double> parseTolerance(String toleranceStr) {
+      if (toleranceStr.isEmpty || toleranceStr == '-') return [];
+      
+      // Результат: [нижнее отклонение, верхнее отклонение]
+      List<double> result = [];
+      
+      // Разбиваем на строки, если есть
+      List<String> lines = toleranceStr.split('\n');
+      
+      for (String line in lines) {
+        if (line.isEmpty) continue;
+        
+        // Очищаем строку и получаем знак
+        String cleanLine = line.trim();
+        String sign = '';
+        
+        if (cleanLine.startsWith('+')) {
+          sign = '+';
+          cleanLine = cleanLine.substring(1);
+        } else if (cleanLine.startsWith('-')) {
+          sign = '-';
+          cleanLine = cleanLine.substring(1);
+        }
+        
+        try {
+          double value = double.parse(cleanLine);
+          // Применяем знак
+          if (sign == '-') value = -value;
+          
+          result.add(value);
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      return result;
+    }
+
+    // Вычисляем граничные значения на основе введенного базового значения
+    void _calculateValues(String inputValue) {
+      try {
+        baseValue = double.parse(inputValue);
+        
+        // Парсим допуск
+        List<double> toleranceValues = parseTolerance(toleranceValue);
+        
+        if (toleranceValues.isEmpty) {
+          minValueStr = '-';
+          maxValueStr = '-';
+          nominalValueStr = baseValue.toString();
+          return;
+        }
+        
+        // Если только одно значение допуска (несимметричный допуск)
+        if (toleranceValues.length == 1) {
+          double tolerance = toleranceValues[0];
+          
+          if (tolerance >= 0) {
+            // Положительный допуск: базовое значение + допуск
+            minValueStr = baseValue.toString();
+            maxValueStr = (baseValue + tolerance).toString();
+          } else {
+            // Отрицательный допуск: базовое значение - допуск
+            minValueStr = (baseValue + tolerance).toString();  // tolerance уже отрицательный
+            maxValueStr = baseValue.toString();
+          }
+        } 
+        // Если два значения допуска (диапазон)
+        else if (toleranceValues.length >= 2) {
+          // Сортируем, чтобы быть уверенными, что первый меньше
+          toleranceValues.sort();
+          
+          minValueStr = (baseValue + toleranceValues[0]).toString();
+          maxValueStr = (baseValue + toleranceValues[toleranceValues.length - 1]).toString();
+        }
+        
+        // Форматируем значения в выбранных единицах измерения
+        double minValue = double.parse(minValueStr);
+        double maxValue = double.parse(maxValueStr);
+        
+        if (_currentUnit == UnitSystem.inches) {
+          nominalValueStr = '${baseValue.toStringAsFixed(5)} in';
+          minValueStr = '${minValue.toStringAsFixed(5)} in';
+          maxValueStr = '${maxValue.toStringAsFixed(5)} in';
+        } else if (_currentUnit == UnitSystem.microns) {
+          nominalValueStr = '${baseValue.toStringAsFixed(0)} μm';
+          minValueStr = '${minValue.toStringAsFixed(0)} μm';
+          maxValueStr = '${maxValue.toStringAsFixed(0)} μm';
+        } else {
+          nominalValueStr = '${baseValue.toStringAsFixed(3)} mm';
+          minValueStr = '${minValue.toStringAsFixed(3)} mm';
+          maxValueStr = '${maxValue.toStringAsFixed(3)} mm';
+        }
+      } catch (e) {
+        nominalValueStr = 'Ошибка';
+        minValueStr = '-';
+        maxValueStr = '-';
+      }
+    }
+    
+    // Создаем stateful билдер для обновления результатов при вводе
+    StatefulBuilder statefulBuilder = StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Text('$columnName - Применение допуска'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Отображаем значение допуска
+                const Text(
+                  'Допуск:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(toleranceValue),
+                const SizedBox(height: 16),
+                
+                // Поле ввода базового значения
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Введите номинальный размер',
+                    hintText: 'Например: 10.5',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    setState(() {
+                      _calculateValues(value);
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+                
+                // Результаты расчета
+                const Text(
+                  'Результаты:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Expanded(child: Text('Номинальный размер:')),
+                    Text(nominalValueStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Expanded(child: Text('Минимальный размер:')),
+                    Text(minValueStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Expanded(child: Text('Максимальный размер:')),
+                    Text(maxValueStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Закрыть'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return statefulBuilder;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Определяем текущую тему
@@ -178,6 +374,21 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
           isScrollbarAlwaysShown: true,
           rowHeight: 60, // Увеличиваем высоту строк для предотвращения переполнения
           columns: _buildGridColumns(),
+          onCellTap: (details) {
+            // Обрабатываем нажатие на ячейку, кроме заголовков
+            if (!details.rowColumnIndex.rowIndex.isOdd) return;
+            
+            // Получаем данные о нажатой ячейке
+            DataGridRow row = _toleranceDataSource.rows[details.rowColumnIndex.rowIndex - 1];
+            String columnName = _buildGridColumns()[details.rowColumnIndex.columnIndex].columnName;
+            String cellValue = row.getCells().firstWhere((cell) => cell.columnName == columnName).value.toString();
+            
+            // Если это колонка с интервалом, не показываем диалог
+            if (columnName == 'Interval') return;
+            
+            // Показываем диалог ввода значения
+            _showValueInputDialog(context, columnName, cellValue);
+          },
         ),
       ),
     );
