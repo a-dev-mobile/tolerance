@@ -265,21 +265,15 @@ if (columnName.isNotEmpty) {
               ),
               const SizedBox(height: 20),
               
-              // Результаты расчета - визуально привлекательно
-              const Text(
-                'Результаты:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
               
               // Используем созданный нами виджет для отображения значений
-              buildValueRow('Номинальный:', nominalValueStr, Icons.crop_free, nominalColor),
+              buildValueRow('Ном: ', nominalValueStr, Icons.crop_free, nominalColor),
               const SizedBox(height: 8),
-              buildValueRow('Минимальный:', minValueStr, Icons.arrow_downward, minColor),
+              buildValueRow('Мин: ', minValueStr, Icons.arrow_downward, minColor),
               const SizedBox(height: 8),
-              buildValueRow('Средний:', avgValueStr, Icons.sync_alt, avgColor),
+              buildValueRow('Сред: ', avgValueStr, Icons.sync_alt, avgColor),
               const SizedBox(height: 8),
-              buildValueRow('Максимальный:', maxValueStr, Icons.arrow_upward, maxColor),
+              buildValueRow('Макс: ', maxValueStr, Icons.arrow_upward, maxColor),
             ],
           ),
         ),

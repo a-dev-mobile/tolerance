@@ -3,9 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'unit_system.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'tolerance_data_source.dart';
+import 'unit_system.dart';
 import 'value_input_dialog.dart';
+
+// Константы для ключей SharedPreferences
+const String _keyScrollPositionX = 'scrollPositionX';
+const String _keyScrollPositionY = 'scrollPositionY';
 
 // Виджет страницы с таблицей допусков
 class ToleranceTablePage extends StatefulWidget {
@@ -23,14 +28,18 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   // Источник данных для таблицы
   late ToleranceDataSource _toleranceDataSource;
   
-  // Контроллер прокрутки
-  final ScrollController _scrollController = ScrollController();
+  // Контроллеры прокрутки для вертикальной и горизонтальной прокрутки
+  final ScrollController _verticalScrollController = ScrollController();
+  final ScrollController _horizontalScrollController = ScrollController();
   
   // Текущий режим темы (темная/светлая)
   bool _isDarkMode = false;
   
   // Текущая система единиц измерения (миллиметры по умолчанию)
   UnitSystem _currentUnit = UnitSystem.millimeters;
+  
+  // Флаг для отслеживания, загружены ли данные прокрутки
+  bool _scrollPositionRestored = false;
 
   @override
   void initState() {
@@ -40,6 +49,64 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Изначально устанавливаем темный режим в false,
     // правильное значение будет установлено в didChangeDependencies
     _isDarkMode = false;
+    
+    // Загружаем сохраненную позицию прокрутки
+    _loadScrollPosition();
+    
+    // Добавляем слушатели для сохранения позиции прокрутки при прокрутке
+    _verticalScrollController.addListener(_saveScrollPosition);
+    _horizontalScrollController.addListener(_saveScrollPosition);
+  }
+  
+  // Загрузка сохраненной позиции прокрутки
+  Future<void> _loadScrollPosition() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final double? savedScrollX = prefs.getDouble(_keyScrollPositionX);
+      final double? savedScrollY = prefs.getDouble(_keyScrollPositionY);
+      
+      // Восстанавливаем позицию прокрутки, если она была сохранена
+      if (savedScrollX != null && savedScrollY != null) {
+        // Используем Future.delayed, чтобы дать таблице время на инициализацию
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            if (_horizontalScrollController.hasClients && savedScrollX <= _horizontalScrollController.position.maxScrollExtent) {
+              _horizontalScrollController.jumpTo(savedScrollX);
+            }
+            
+            if (_verticalScrollController.hasClients && savedScrollY <= _verticalScrollController.position.maxScrollExtent) {
+              _verticalScrollController.jumpTo(savedScrollY);
+            }
+            
+            setState(() {
+              _scrollPositionRestored = true;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при загрузке позиции прокрутки: $e');
+    }
+  }
+  
+  // Сохранение текущей позиции прокрутки
+  Future<void> _saveScrollPosition() async {
+    // Сохраняем только если не находимся в процессе восстановления
+    if (!_scrollPositionRestored) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      if (_horizontalScrollController.hasClients) {
+        await prefs.setDouble(_keyScrollPositionX, _horizontalScrollController.offset);
+      }
+      
+      if (_verticalScrollController.hasClients) {
+        await prefs.setDouble(_keyScrollPositionY, _verticalScrollController.offset);
+      }
+    } catch (e) {
+      debugPrint('Ошибка при сохранении позиции прокрутки: $e');
+    }
   }
   
   @override
@@ -51,8 +118,16 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
   @override
   void dispose() {
+    // Сохраняем позицию прокрутки перед уничтожением виджета
+    _saveScrollPosition();
+    
+    // Удаляем слушатели
+    _verticalScrollController.removeListener(_saveScrollPosition);
+    _horizontalScrollController.removeListener(_saveScrollPosition);
+    
     // Освобождаем ресурсы
-    _scrollController.dispose();
+    _verticalScrollController.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -83,13 +158,22 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     _isDarkMode = currentBrightness == Brightness.dark;
 
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            _buildAppBar(innerBoxIsScrolled),
-          ];
+      body: NotificationListener<ScrollNotification>(
+        // Добавляем обработчик прокрутки для сохранения позиции
+        onNotification: (ScrollNotification scrollInfo) {
+          if (scrollInfo is ScrollEndNotification) {
+            _saveScrollPosition();
+          }
+          return false;
         },
-        body: _buildDataGrid(),
+        child: NestedScrollView(
+          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+            return <Widget>[
+              _buildAppBar(innerBoxIsScrolled),
+            ];
+          },
+          body: _buildDataGrid(),
+        ),
       ),
     );
   }
@@ -97,47 +181,47 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   // Создание аппбара с заголовком и кнопками
   Widget _buildAppBar(bool innerBoxIsScrolled) {
     return SliverAppBar(
-    title: Row(
-      children: [
-        const Text('Допуски'),
-        if (_currentUnit == UnitSystem.millimeters)
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Tooltip(
-              message: 'Ячейки кликабельны в режиме мм',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(50),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.touch_app,
-                      size: 16,
-                      color: Colors.green.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Кликабельно',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+      title: Row(
+        children: [
+          const Text('Допуски'),
+          if (_currentUnit == UnitSystem.millimeters)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Tooltip(
+                message: 'Ячейки кликабельны в режиме мм',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withAlpha(50),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        size: 16,
+                        color: Colors.green.shade700,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Кликабельно',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
-    ),
-    pinned: false,     // Не фиксировать верхнюю часть аппбара
-    floating: true,    // Позволяет аппбару появляться при прокрутке вверх
-    snap: false,       // Делаем прокрутку более плавной
-    forceElevated: innerBoxIsScrolled,
+        ],
+      ),
+      pinned: false,     // Не фиксировать верхнюю часть аппбара при прокрутке
+      floating: true,    // Позволяет аппбару появляться при прокрутке вверх
+      snap: true,        // Быстрое появление аппбара при небольшой прокрутке вверх
+      forceElevated: innerBoxIsScrolled,
       actions: [
         // Кнопка переключения единиц измерения
         IconButton(
@@ -200,36 +284,36 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       rowHeight: 60, // Увеличиваем высоту строк для предотвращения переполнения
       columns: _buildGridColumns(),
       onCellTap: _handleCellTap,
+      // Добавляем контроллеры прокрутки для сохранения позиции
+      verticalScrollController: _verticalScrollController,
+      horizontalScrollController: _horizontalScrollController,
     );
   }
   
   // Обработка нажатия на ячейку
+  void _handleCellTap(DataGridCellTapDetails details) {
+    // Обрабатываем нажатия только если выбраны миллиметры
+    if (_currentUnit != UnitSystem.millimeters) return;
 
-
-// Обработка нажатия на ячейку
-void _handleCellTap(DataGridCellTapDetails details) {
-  // Обрабатываем нажатия только если выбраны миллиметры
-  if (_currentUnit != UnitSystem.millimeters) return;
-
-  // Пропускаем нажатия на заголовок (индекс 0)
-  if (details.rowColumnIndex.rowIndex == 0) return;
-  
-  // Получаем данные о нажатой ячейке
-  DataGridRow row = _toleranceDataSource.rows[details.rowColumnIndex.rowIndex - 1];
-  String columnName = _buildGridColumns()[details.rowColumnIndex.columnIndex].columnName;
-  String cellValue = row.getCells().firstWhere((cell) => cell.columnName == columnName).value.toString();
-  
-  // Если это колонка с интервалом, не показываем диалог
-  if (columnName == 'Interval') return;
-  
-  // Показываем диалог ввода значения
-  showValueInputDialog(
-    context: context, 
-    columnName: columnName, 
-    toleranceValue: cellValue,
-    currentUnit: _currentUnit
-  );
-}
+    // Пропускаем нажатия на заголовок (индекс 0)
+    if (details.rowColumnIndex.rowIndex == 0) return;
+    
+    // Получаем данные о нажатой ячейке
+    DataGridRow row = _toleranceDataSource.rows[details.rowColumnIndex.rowIndex - 1];
+    String columnName = _buildGridColumns()[details.rowColumnIndex.columnIndex].columnName;
+    String cellValue = row.getCells().firstWhere((cell) => cell.columnName == columnName).value.toString();
+    
+    // Если это колонка с интервалом, не показываем диалог
+    if (columnName == 'Interval') return;
+    
+    // Показываем диалог ввода значения
+    showValueInputDialog(
+      context: context, 
+      columnName: columnName, 
+      toleranceValue: cellValue,
+      currentUnit: _currentUnit
+    );
+  }
 
   // Создание колонок для таблицы
   List<GridColumn> _buildGridColumns() {
