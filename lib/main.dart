@@ -10,90 +10,54 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Таблица допусков',
+      title: 'Двусторонняя прокрутка таблицы',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        brightness: Brightness.light,
       ),
-      home: const ScrollableTableScreen(),
+      home: const OptimizedDataTableExample(),
     );
   }
 }
 
-class ScrollableTableScreen extends StatefulWidget {
-  const ScrollableTableScreen({Key? key}) : super(key: key);
+class OptimizedDataTableExample extends StatefulWidget {
+  const OptimizedDataTableExample({Key? key}) : super(key: key);
 
   @override
-  _ScrollableTableScreenState createState() => _ScrollableTableScreenState();
+  State<OptimizedDataTableExample> createState() => _OptimizedDataTableExampleState();
 }
 
-class _ScrollableTableScreenState extends State<ScrollableTableScreen> {
-  // Контроллеры для синхронизации прокрутки
-  final ScrollController _horizontalController = ScrollController();
+class _OptimizedDataTableExampleState extends State<OptimizedDataTableExample> {
   final ScrollController _verticalController = ScrollController();
+  final ScrollController _horizontalController = ScrollController();
   
-  // Размеры ячеек и заголовков
-  final double _rowHeight = 50.0;
-  final double _firstColumnWidth = 120.0;
-  final double _columnWidth = 80.0;
+  // Генерируем большой набор данных
+  late final List<List<String>> _tableData;
   
-  // Данные для таблицы
-  late List<String> _horizontalHeaders;
-  late List<String> _verticalHeaders;
-  late List<List<String>> _tableData;
+  final int _rowCount = 1000;  // Увеличиваем количество строк для проверки производительности
+  final int _colCount = 100;   // Увеличиваем количество колонок
   
-  // Количество строк и столбцов
-  final int _rowCount = 100; // Количество строк
-  final int _columnCount = 100; // Количество столбцов
-  
+  final double _cellWidth = 120.0;
+  final double _cellHeight = 50.0;
+  final double _firstColWidth = 100.0;
+  final double _headerHeight = 50.0;
+
   @override
   void initState() {
     super.initState();
-    _generateTableData();
-  }
-  
-  // Генерируем данные для таблицы допусков
-  void _generateTableData() {
-    // Создаем заголовки столбцов (допуски)
-    final List<String> fitTypes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'js', 'k', 'm', 'n', 'p', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', 'za', 'zb', 'zc'];
-    final List<String> fitGrades = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18'];
-    
-    _horizontalHeaders = [];
-    
-    // Добавляем малые буквы (отверстия)
-    for (var type in fitTypes) {
-      for (var grade in fitGrades) {
-        _horizontalHeaders.add('$type$grade');
-      }
-    }
-    
-    // Добавляем большие буквы (валы)
-    for (var type in fitTypes) {
-      String upperType = type.toUpperCase();
-      for (var grade in fitGrades) {
-        _horizontalHeaders.add('$upperType$grade');
-      }
-    }
-    
-    // Создаем заголовки строк (диаметры)
-    _verticalHeaders = List.generate(_rowCount, (index) => 'Ø ${index + 1} мм');
-    
-    // Создаем данные таблицы
-    _tableData = List.generate(_rowCount, (rowIndex) {
-      return List.generate(_columnCount, (colIndex) {
-        // Здесь можно добавить реальные данные допусков
-        // Для примера генерируем случайные значения
-        final sign = (rowIndex + colIndex) % 3 == 0 ? '+' : '-';
-        final value = ((rowIndex + 1) * (colIndex + 1)) % 100;
-        return '$sign$value';
-      });
-    });
+    // Инициализируем данные только один раз
+    _tableData = List.generate(
+      _rowCount,
+      (rowIndex) => List.generate(
+        _colCount,
+        (colIndex) => 'Ячейка R${rowIndex + 1}C${colIndex + 1}',
+      ),
+    );
   }
   
   @override
   void dispose() {
-    _horizontalController.dispose();
     _verticalController.dispose();
+    _horizontalController.dispose();
     super.dispose();
   }
 
@@ -101,227 +65,154 @@ class _ScrollableTableScreenState extends State<ScrollableTableScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Таблица допусков'),
-        elevation: 2,
+        title: const Text('Оптимизированная таблица'),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Таблица допусков ISO для валов и отверстий',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
+          _buildHeaderRow(),
           Expanded(
-            child: _buildScrollableTable(),
+            child: Row(
+              children: [
+                _buildFirstColumn(),
+                Expanded(child: _buildOptimizedDataTable()),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-  
-  Widget _buildScrollableTable() {
-    return Stack(
-      children: [
-        // 1. Основная часть таблицы (прокручиваемая во всех направлениях)
-        Positioned.fill(
-          top: _rowHeight,
-          left: _firstColumnWidth,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification notification) {
-              // Синхронизируем горизонтальную прокрутку
-              if (notification is ScrollUpdateNotification &&
-                  notification.metrics.axis == Axis.horizontal) {
-                _horizontalController.jumpTo(_horizontalController.offset + notification.scrollDelta!);
-              }
-              // Синхронизируем вертикальную прокрутку
-              if (notification is ScrollUpdateNotification &&
-                  notification.metrics.axis == Axis.vertical) {
-                _verticalController.jumpTo(_verticalController.offset + notification.scrollDelta!);
-              }
-              return true;
-            },
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const ClampingScrollPhysics(),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                physics: const ClampingScrollPhysics(),
-                child: _buildMainTable(),
-              ),
-            ),
-          ),
-        ),
-        
-        // 2. Фиксированный левый верхний угол
-        Positioned(
-          top: 0,
-          left: 0,
-          child: Container(
-            width: _firstColumnWidth,
-            height: _rowHeight,
+
+  Widget _buildHeaderRow() {
+    return SizedBox(
+      height: _headerHeight,
+      child: Row(
+        children: [
+          Container(
+            width: _firstColWidth,
+            height: _headerHeight,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.blue.shade700,
-              border: Border.all(color: Colors.grey.shade300),
+              color: Colors.blue[100],
+              border: Border.all(color: Colors.grey),
             ),
-            child: const Center(
-              child: Text(
-                'Размер / Допуск',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _horizontalController,
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(), // Отключаем собственную прокрутку
+              child: Row(
+                children: List.generate(
+                  _colCount,
+                  (index) => Container(
+                    width: _cellWidth,
+                    height: _headerHeight,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: Text(
+                      'Col ${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
-        ),
-        
-        // 3. Фиксированная верхняя строка (прокручивается только по горизонтали)
-        Positioned(
-          top: 0,
-          left: _firstColumnWidth,
-          right: 0,
-          height: _rowHeight,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            controller: _horizontalController,
-            physics: const ClampingScrollPhysics(),
-            child: _buildHorizontalHeaderRow(),
-          ),
-        ),
-        
-        // 4. Фиксированная левая колонка (прокручивается только по вертикали)
-        Positioned(
-          top: _rowHeight,
-          left: 0,
-          bottom: 0,
-          width: _firstColumnWidth,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            controller: _verticalController,
-            physics: const ClampingScrollPhysics(),
-            child: _buildVerticalHeaderColumn(),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  // Строит основную часть таблицы (все данные)
-  Widget _buildMainTable() {
-    return Table(
-      columnWidths: Map.fromIterable(
-        List.generate(_columnCount, (index) => index),
-        key: (index) => index,
-        value: (index) => FixedColumnWidth(_columnWidth),
+        ],
       ),
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      border: TableBorder.all(color: Colors.grey.shade300),
-      children: List.generate(_rowCount, (rowIndex) {
-        return TableRow(
-          children: List.generate(_columnCount, (colIndex) {
-            // Определяем цвет ячейки в зависимости от типа допуска
-            final headerText = _horizontalHeaders[colIndex];
-            Color cellColor = Colors.white;
-            
-            // Если это допуск отверстия (маленькая буква)
-            if (headerText[0].toLowerCase() == headerText[0]) {
-              cellColor = Colors.blue.shade50;
-            } 
-            // Если это допуск вала (большая буква)
-            else {
-              cellColor = Colors.green.shade50;
-            }
-            
-            // Применяем дополнительные стили в зависимости от значения
-            final value = _tableData[rowIndex][colIndex];
-            if (value.startsWith('+')) {
-              cellColor = value.startsWith('+0') ? cellColor : Colors.green.shade100;
-            } else if (value.startsWith('-')) {
-              cellColor = value.startsWith('-0') ? cellColor : Colors.red.shade100;
-            }
-            
-            return Container(
-              height: _rowHeight,
-              color: cellColor,
-              child: Center(
-                child: Text(
-                  _tableData[rowIndex][colIndex],
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }),
-        );
-      }),
     );
   }
-  
-  // Строит строку заголовков (типы допусков)
-  Widget _buildHorizontalHeaderRow() {
-    return Row(
-      children: List.generate(_columnCount, (index) {
-        final headerText = _horizontalHeaders[index];
-        
-        // Определяем цвет заголовка
-        Color headerColor;
-        Color textColor = Colors.white;
-        
-        // Если это допуск отверстия (маленькая буква)
-        if (headerText[0].toLowerCase() == headerText[0]) {
-          headerColor = Colors.blue.shade600;
-        } 
-        // Если это допуск вала (большая буква)
-        else {
-          headerColor = Colors.green.shade600;
+
+  Widget _buildFirstColumn() {
+    return SizedBox(
+      width: _firstColWidth,
+      child: ListView.builder(
+        controller: _verticalController,
+        physics: const NeverScrollableScrollPhysics(), // Отключаем собственную прокрутку
+        itemCount: _rowCount,
+        itemExtent: _cellHeight, // Фиксированная высота для повышения производительности
+        itemBuilder: (context, rowIndex) => Container(
+          width: _firstColWidth,
+          height: _cellHeight,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            border: Border.all(color: Colors.grey),
+          ),
+          child: Text(
+            'Row ${rowIndex + 1}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptimizedDataTable() {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        // Обрабатываем вертикальную прокрутку данных - синхронизируем с первой колонкой
+        if (scrollInfo is ScrollUpdateNotification && 
+            scrollInfo.metrics.axis == Axis.vertical) {
+          _verticalController.jumpTo(scrollInfo.metrics.pixels);
         }
-        
-        return Container(
-          width: _columnWidth,
-          height: _rowHeight,
-          decoration: BoxDecoration(
-            color: headerColor,
-            border: Border.all(color: Colors.grey.shade300),
+        // Обрабатываем горизонтальную прокрутку данных - синхронизируем с заголовком
+        if (scrollInfo is ScrollUpdateNotification && 
+            scrollInfo.metrics.axis == Axis.horizontal) {
+          _horizontalController.jumpTo(scrollInfo.metrics.pixels);
+        }
+        return false; // Позволяем событию продолжить распространение
+      },
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        child: SizedBox(
+          width: _cellWidth * _colCount,
+          child: ListView.builder(
+            physics: const ClampingScrollPhysics(),
+            itemCount: _rowCount,
+            itemExtent: _cellHeight, // Фиксированная высота для повышения производительности
+            itemBuilder: (context, rowIndex) {
+              return SizedBox(
+                height: _cellHeight,
+                child: _buildOptimizedRow(rowIndex),
+              );
+            },
           ),
-          child: Center(
-            child: Text(
-              headerText,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      }),
+        ),
+      ),
     );
   }
-  
-  // Строит колонку заголовков (размеры)
-  Widget _buildVerticalHeaderColumn() {
-    return Column(
-      children: List.generate(_rowCount, (index) {
+
+  // Используем ListView.builder для ячеек для оптимизации рендеринга
+  Widget _buildOptimizedRow(int rowIndex) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      physics: const NeverScrollableScrollPhysics(), // Отключаем прокрутку для строки
+      itemCount: _colCount,
+      itemExtent: _cellWidth, // Фиксированная ширина для повышения производительности
+      itemBuilder: (context, colIndex) {
         return Container(
-          width: _firstColumnWidth,
-          height: _rowHeight,
+          width: _cellWidth,
+          height: _cellHeight,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Colors.grey.withOpacity(0.5)),
+            color: (rowIndex % 2 == 0) ? Colors.white : Colors.grey[50],
           ),
-          child: Center(
-            child: Text(
-              _verticalHeaders[index],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Text(
+            _tableData[rowIndex][colIndex],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         );
-      }),
+      },
     );
   }
 }
