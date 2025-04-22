@@ -7,7 +7,7 @@ import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/search_dialog.dart';
 import 'package:mobile_tolerance/tolerance_data_source.dart';
 import 'package:mobile_tolerance/core/models/unit_system.dart';
-import 'package:mobile_tolerance/value_input_dialog.dart';
+import 'package:mobile_tolerance/value_input_page.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Import our custom theme
@@ -714,12 +714,13 @@ void _handleScroll() {
     if (!mounted) return;
     
     // Show value input dialog
-    showValueInputDialog(
-      context: context, 
-      columnName: columnName, 
-      toleranceValue: cellValue,
-      currentUnit: _currentUnit
-    );
+  // Navigate to value input page
+  navigateToValueInputPage(
+    context: context, 
+    columnName: columnName, 
+    toleranceValue: cellValue,
+    currentUnit: _currentUnit
+  );
   }
 
   // Create columns for table
