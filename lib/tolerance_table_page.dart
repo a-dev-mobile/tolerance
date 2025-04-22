@@ -2,6 +2,7 @@
 // Contains the page widget and its logic with engineering design system
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/search_dialog.dart';
 import 'package:mobile_tolerance/tolerance_data_source.dart';
@@ -52,6 +53,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   // Show tooltips for unit system changes
   bool _showTooltip = false;
   
+  // Переменная для отслеживания видимости AppBar
+  bool _isAppBarVisible = true;
+  
   @override
   void initState() {
     super.initState();
@@ -61,6 +65,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Load saved scroll position
     _loadScrollPosition();
     
+    // Добавляем слушатель для скрытия/показа AppBar при скролле
+    _verticalScrollController.addListener(_handleScroll);
+    
     // Add listeners to save scroll position on scroll
     _verticalScrollController.addListener(_saveScrollPosition);
     _horizontalScrollController.addListener(_saveScrollPosition);
@@ -68,6 +75,24 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Show tooltip after a delay on first launch
     _checkFirstLaunch();
   }
+  
+
+void _handleScroll() {
+  if (_verticalScrollController.hasClients) {
+    final offset = _verticalScrollController.offset;
+    // Скрываем AppBar при малейшем скролле вниз (offset > 0)
+    // и показываем только когда пользователь в самом верху (offset = 0)
+    if (offset > 0 && _isAppBarVisible) {
+      setState(() {
+        _isAppBarVisible = false;
+      });
+    } else if (offset <= 0 && !_isAppBarVisible) {
+      setState(() {
+        _isAppBarVisible = true;
+      });
+    }
+  }
+}
   
   // Check if this is the first launch to show tooltip
   Future<void> _checkFirstLaunch() async {
@@ -175,49 +200,51 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Remove listeners
     _verticalScrollController.removeListener(_saveScrollPosition);
     _horizontalScrollController.removeListener(_saveScrollPosition);
+    _verticalScrollController.removeListener(_handleScroll);
     
     // Free resources
     _verticalScrollController.dispose();
     _horizontalScrollController.dispose();
     super.dispose();
   }
-// Method to cycle through unit systems with feedback
-void _changeUnitSystem() {
-  // Запоминаем предыдущую единицу измерения
-  final UnitSystem oldUnit = _currentUnit;
-  
-  setState(() {
-    // Cycle between unit systems
-    switch (_currentUnit) {
-      case UnitSystem.millimeters:
-        _currentUnit = UnitSystem.inches;
-        break;
-      case UnitSystem.inches:
-        _currentUnit = UnitSystem.microns;
-        break;
-      case UnitSystem.microns:
-        _currentUnit = UnitSystem.millimeters;
-        break;
-    }
-    // Update table data source with new unit system
-    _toleranceDataSource = ToleranceDataSource(unitSystem: _currentUnit);
-  });
-  
-  // Показываем пользователю сообщение о смене единиц измерения
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        'Единицы измерения изменены: ${oldUnit.symbol} → ${_currentUnit.symbol}',
-        style: const TextStyle(fontSize: 14),
+
+  // Method to cycle through unit systems with feedback
+  void _changeUnitSystem() {
+    // Запоминаем предыдущую единицу измерения
+    final UnitSystem oldUnit = _currentUnit;
+    
+    setState(() {
+      // Cycle between unit systems
+      switch (_currentUnit) {
+        case UnitSystem.millimeters:
+          _currentUnit = UnitSystem.inches;
+          break;
+        case UnitSystem.inches:
+          _currentUnit = UnitSystem.microns;
+          break;
+        case UnitSystem.microns:
+          _currentUnit = UnitSystem.millimeters;
+          break;
+      }
+      // Update table data source with new unit system
+      _toleranceDataSource = ToleranceDataSource(unitSystem: _currentUnit);
+    });
+    
+    // Показываем пользователю сообщение о смене единиц измерения
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Единицы измерения изменены: ${oldUnit.symbol} → ${_currentUnit.symbol}',
+          style: const TextStyle(fontSize: 14),
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +252,17 @@ void _changeUnitSystem() {
     final currentBrightness = Theme.of(context).brightness;
     _isDarkMode = currentBrightness == Brightness.dark;
 
-    return Scaffold(
+  return Scaffold(
+    // Используем пустой AppBar с нулевой высотой вместо null,
+    // чтобы сохранить цвет StatusBar при скрытии основного AppBar
+    appBar: _isAppBarVisible 
+      ? _buildStandardAppBar() 
+      : AppBar(
+          toolbarHeight: 0,
+          elevation: 0,
+
+          automaticallyImplyLeading: false,
+        ),
       body: NotificationListener<ScrollNotification>(
         // Add scroll handler to save position
         onNotification: (ScrollNotification scrollInfo) {
@@ -234,27 +271,20 @@ void _changeUnitSystem() {
           }
           return false;
         },
-        child: NestedScrollView(
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return <Widget>[
-              _buildAppBar(innerBoxIsScrolled),
-            ];
-          },
-          body: Stack(
-            children: [
-              // Background pattern for engineering aesthetic (subtle grid)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: EngineeringBackgroundPainter(isDarkMode: _isDarkMode),
-                ),
+        child: Stack(
+          children: [
+            // Background pattern for engineering aesthetic (subtle grid)
+            Positioned.fill(
+              child: CustomPaint(
+                painter: EngineeringBackgroundPainter(isDarkMode: _isDarkMode),
               ),
-              // Main data grid
-              _buildDataGrid(),
-              // Tooltip for first launch
-              if (_showTooltip)
-                _buildHelpTooltip(),
-            ],
-          ),
+            ),
+            // Main data grid
+            _buildDataGrid(),
+            // Tooltip for first launch
+            if (_showTooltip)
+              _buildHelpTooltip(),
+          ],
         ),
       ),
       // Floating action button for quick search
@@ -266,208 +296,202 @@ void _changeUnitSystem() {
     );
   }
   
-  // Build tooltip for first-time users
-Widget _buildHelpTooltip() {
-  return Positioned(
-    top: 80,
-    right: 20,
-    child: Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: EngineeringTheme.primaryBlue,
-          width: 2,
-        ),
+  // Новый метод для построения стандартного AppBar
+  AppBar _buildStandardAppBar() {
+    return AppBar(
+      title: Row(
+        children: [
+          const Text('Допуски и посадки'),
+          if (_currentUnit == UnitSystem.millimeters)
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Tooltip(
+                message: 'Ячейки кликабельны в режиме мм',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: EngineeringTheme.successColor.withAlpha(38), // 0.15 * 255 = 38
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: EngineeringTheme.successColor.withAlpha(77), // 0.3 * 255 = 77
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        size: 16,
+                        color: EngineeringTheme.successColor,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Кликабельно',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
-      child: Container(
-        width: 250,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: EngineeringTheme.infoColor,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Подсказка',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
+      actions: [
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (value) {
+            switch (value) {
+              case 'search':
+                _showSearchDialog();
+                break;
+              case 'units':
+                _changeUnitSystem();
+                break;
+              case 'theme':
+                _toggleTheme();
+                break;
+              case 'about':
+                _showAboutDialog();
+                break;
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem<String>(
+              value: 'search',
+              child: ListTile(
+                leading: Icon(Icons.search),
+                title: Text('Поиск допуска'),
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Нажмите на ячейку с допуском, чтобы рассчитать размеры.',
-              style: TextStyle(fontSize: 14),
+            // Добавляем пункт меню для переключения единиц измерения
+            PopupMenuItem<String>(
+              value: 'units',
+              child: ListTile(
+                leading: const Icon(Icons.straighten),
+                title: Text('Единицы: ${_currentUnit.symbol}'),
+                subtitle: Text('Нажмите для смены единиц измерения'),
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.menu,
-                  size: 16, 
-                  color: EngineeringTheme.primaryBlue,
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Настройки темы и единиц измерения находятся в меню',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
+            // Добавляем пункт меню для переключения темы
+            PopupMenuItem<String>(
+              value: 'theme',
+              child: ListTile(
+                leading: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                title: Text(_isDarkMode ? 'Светлая тема' : 'Темная тема'),
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _showTooltip = false;
-                  });
-                },
-                child: const Text('ПОНЯТНО'),
+            const PopupMenuItem<String>(
+              value: 'about',
+              child: ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text('О программе'),
+                contentPadding: EdgeInsets.zero,
               ),
             ),
           ],
         ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(4.0),
+        child: Container(
+          height: 4.0,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                EngineeringTheme.primaryBlue,
+                EngineeringTheme.primaryBlue.withAlpha(153), // 0.6 * 255 = 153
+              ],
+            ),
+          ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
   
-  // Create app bar with title and menu
-Widget _buildAppBar(bool innerBoxIsScrolled) {
-  return SliverAppBar(
-    title: Row(
-      children: [
-        const Text('Допуски и посадки'),
-        if (_currentUnit == UnitSystem.millimeters)
-          Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: Tooltip(
-              message: 'Ячейки кликабельны в режиме мм',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: EngineeringTheme.successColor.withAlpha(38), // 0.15 * 255 = 38
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: EngineeringTheme.successColor.withAlpha(77), // 0.3 * 255 = 77
-                    width: 1,
+  // Build tooltip for first-time users
+  Widget _buildHelpTooltip() {
+    return Positioned(
+      top: 80,
+      right: 20,
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: EngineeringTheme.primaryBlue,
+            width: 2,
+          ),
+        ),
+        child: Container(
+          width: 250,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: EngineeringTheme.infoColor,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.touch_app,
-                      size: 16,
-                      color: EngineeringTheme.successColor,
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Подсказка',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Кликабельно',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Нажмите на ячейку с допуском, чтобы рассчитать размеры.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.menu,
+                    size: 16, 
+                    color: EngineeringTheme.primaryBlue,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Настройки темы и единиц измерения находятся в меню',
+                      style: TextStyle(fontSize: 14),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showTooltip = false;
+                    });
+                  },
+                  child: const Text('ПОНЯТНО'),
                 ),
               ),
-            ),
-          ),
-      ],
-    ),
-    pinned: true,     // Pin app bar at top when scrolling
-    floating: true,   // Allow app bar to appear when scrolling up
-    snap: true,       // Quick appearance of app bar on small scroll up
-    forceElevated: innerBoxIsScrolled,
-    actions: [
-      // Оставляем только кнопку меню
-      PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert),
-        onSelected: (value) {
-          switch (value) {
-            case 'search':
-              _showSearchDialog();
-              break;
-            case 'units':
-              _changeUnitSystem();
-              break;
-            case 'theme':
-              _toggleTheme();
-              break;
-            case 'about':
-              _showAboutDialog();
-              break;
-          }
-        },
-        itemBuilder: (BuildContext context) => [
-          const PopupMenuItem<String>(
-            value: 'search',
-            child: ListTile(
-              leading: Icon(Icons.search),
-              title: Text('Поиск допуска'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          // Добавляем пункт меню для переключения единиц измерения
-          PopupMenuItem<String>(
-            value: 'units',
-            child: ListTile(
-              leading: const Icon(Icons.straighten),
-              title: Text('Единицы: ${_currentUnit.symbol}'),
-              subtitle: Text('Нажмите для смены единиц измерения'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          // Добавляем пункт меню для переключения темы
-          PopupMenuItem<String>(
-            value: 'theme',
-            child: ListTile(
-              leading: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-              title: Text(_isDarkMode ? 'Светлая тема' : 'Темная тема'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'about',
-            child: ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('О программе'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
-    ],
-    bottom: PreferredSize(
-      preferredSize: const Size.fromHeight(4.0),
-      child: Container(
-        height: 4.0,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              EngineeringTheme.primaryBlue,
-              EngineeringTheme.primaryBlue.withAlpha(153), // 0.6 * 255 = 153
             ],
           ),
         ),
       ),
-    ),
-  );
-}
-  
+    );
+  }
   
   // Show about dialog
   void _showAboutDialog() {
@@ -542,20 +566,17 @@ Widget _buildAppBar(bool innerBoxIsScrolled) {
     );
   }
   
-// Method to toggle theme with feedback
-void _toggleTheme() {
-  final bool oldIsDarkMode = _isDarkMode;
-  
-  setState(() {
-    _isDarkMode = !_isDarkMode;
-    // Apply theme to entire app
-    final themeMode = _isDarkMode ? ThemeMode.dark : ThemeMode.light;
-    widget.setThemeMode(themeMode);
-  });
-  
-  
-  
-}
+  // Method to toggle theme with feedback
+  void _toggleTheme() {
+    final bool oldIsDarkMode = _isDarkMode;
+    
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+      // Apply theme to entire app
+      final themeMode = _isDarkMode ? ThemeMode.dark : ThemeMode.light;
+      widget.setThemeMode(themeMode);
+    });
+  }
   
   // Create data grid
   Widget _buildDataGrid() {
@@ -599,9 +620,6 @@ void _toggleTheme() {
     
     // If user selected a tolerance
     if (selectedTolerance != null && mounted) {
-      // Show user a snackbar that we're scrolling to the selected tolerance
-      
-      
       _scrollToColumn(selectedTolerance);
     }
   }
