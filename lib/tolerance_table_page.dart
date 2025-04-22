@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mobile_tolerance/engineering_theme.dart';
-import 'package:mobile_tolerance/search_dialog.dart';
+
 import 'package:mobile_tolerance/tolerance_data_source.dart';
 import 'package:mobile_tolerance/core/models/unit_system.dart';
 import 'package:mobile_tolerance/tolerance_search_page.dart';
@@ -660,13 +660,13 @@ void _showSearchDialog() async {
       }
       
       // Clear highlight after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _highlightedColumn = null;
-          });
-        }
-      });
+      // Future.delayed(const Duration(seconds: 3), () {
+      //   if (mounted) {
+      //     setState(() {
+      //       _highlightedColumn = null;
+      //     });
+      //   }
+      // });
     });
   }
   

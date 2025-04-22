@@ -388,27 +388,7 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon
-            Container(
-              padding: const EdgeInsets.all(6),
-              child: isRecent 
-                ? Icon(
-                    Icons.history,
-                    size: 16,
-                    color: baseColor,
-                  )
-                : Icon(
-                    isHole ? Icons.radio_button_unchecked : Icons.circle,
-                    size: 16,
-                    color: baseColor,
-                  ),
-            ),
-            
-            // Tolerance designation
-            Padding(
+        child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 tolerance,
@@ -419,32 +399,42 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                 ),
               ),
             ),
-            
-            // Part type badge
-            
-          ],
-        ),
       ),
     );
   }
   
   // Build the tolerance categories section
   Widget _buildToleranceCategoriesSection() {
-    // Group tolerances by qualitet (number part)
-    Map<String, List<String>> holesByQualitet = _groupTolerancesByQualitet(filteredTolerances.where((t) => 
-      t.isNotEmpty && t[0] == t[0].toUpperCase()).toList());
+    // Split by hole and shaft
+    List<String> holeTolerances = filteredTolerances.where((t) => 
+      t.isNotEmpty && t[0] == t[0].toUpperCase()).toList();
     
-    Map<String, List<String>> shaftsByQualitet = _groupTolerancesByQualitet(filteredTolerances.where((t) => 
-      t.isNotEmpty && t[0] == t[0].toLowerCase()).toList());
+    List<String> shaftTolerances = filteredTolerances.where((t) => 
+      t.isNotEmpty && t[0] == t[0].toLowerCase()).toList();
+    
+    // Sort tolerances by prefix then by IT grade
+    _sortTolerancesByNaturalOrder(holeTolerances);
+    _sortTolerancesByNaturalOrder(shaftTolerances);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Holes section if there are hole tolerances to show
-        if (activeCategory != 'shafts' && holesByQualitet.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
+        if (activeCategory != 'shafts' && holeTolerances.isNotEmpty) ...[
+          // Section header
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: EngineeringTheme.infoColor.withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: EngineeringTheme.infoColor.withAlpha(50),
+                width: 1,
+              ),
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.radio_button_unchecked,
@@ -463,17 +453,34 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
             ),
           ),
           
-          // Display hole tolerances by qualitet
-          _buildQualitetGroups(holesByQualitet, true),
+          // All hole tolerances in a single wrap layout
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: holeTolerances.map((tolerance) =>
+              _buildToleranceChip(tolerance, true)
+            ).toList(),
+          ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
         ],
         
         // Shafts section if there are shaft tolerances to show
-        if (activeCategory != 'holes' && shaftsByQualitet.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
+        if (activeCategory != 'holes' && shaftTolerances.isNotEmpty) ...[
+          // Section header
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: EngineeringTheme.errorColor.withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: EngineeringTheme.errorColor.withAlpha(50),
+                width: 1,
+              ),
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.circle,
@@ -492,90 +499,50 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
             ),
           ),
           
-          // Display shaft tolerances by qualitet
-          _buildQualitetGroups(shaftsByQualitet, false),
+          // All shaft tolerances in a single wrap layout
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: shaftTolerances.map((tolerance) =>
+              _buildToleranceChip(tolerance, false)
+            ).toList(),
+          ),
         ],
       ],
     );
   }
   
-  // Group tolerances by qualitet (IT grade)
-  Map<String, List<String>> _groupTolerancesByQualitet(List<String> tolerances) {
-    Map<String, List<String>> result = {};
-    
-    for (String tolerance in tolerances) {
-      // Extract the number part (qualitet)
-      RegExp regex = RegExp(r'(\d+)');
-      Match? match = regex.firstMatch(tolerance);
+  // Natural sort for tolerances like h1, h2, h3...h11 instead of h1, h11, h2...
+  void _sortTolerancesByNaturalOrder(List<String> tolerances) {
+    tolerances.sort((a, b) {
+      // Extract letter prefix (can be one or more letters)
+      RegExp letterRegex = RegExp(r'^([a-zA-Z]+)');
+      Match? matchA = letterRegex.firstMatch(a);
+      Match? matchB = letterRegex.firstMatch(b);
       
-      if (match != null) {
-        String qualitet = 'IT${match.group(1)}';
-        
-        if (result.containsKey(qualitet)) {
-          result[qualitet]!.add(tolerance);
-        } else {
-          result[qualitet] = [tolerance];
-        }
-      } else {
-        // For tolerances without numbers
-        if (result.containsKey('Другие')) {
-          result['Другие']!.add(tolerance);
-        } else {
-          result['Другие'] = [tolerance];
-        }
+      String prefixA = matchA?.group(1) ?? '';
+      String prefixB = matchB?.group(1) ?? '';
+      
+      // If prefixes are different, sort by prefix
+      if (prefixA != prefixB) {
+        return prefixA.compareTo(prefixB);
       }
-    }
-    
-    return result;
-  }
-  
-  // Build qualitet groups
-  Widget _buildQualitetGroups(Map<String, List<String>> groupedTolerances, bool isHole) {
-    List<String> sortedKeys = groupedTolerances.keys.toList()
-      ..sort((a, b) {
-        if (a == 'Другие') return 1;
-        if (b == 'Другие') return -1;
-        return a.compareTo(b);
-      });
-    
-    return Column(
-      children: sortedKeys.map((qualitet) {
-        List<String> tolerancesInGroup = groupedTolerances[qualitet]!;
-        tolerancesInGroup.sort();
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Qualitet header (like IT7, IT8, etc.)
-            Padding(
-              padding: const EdgeInsets.only(left: 8, bottom: 8),
-              child: Text(
-                qualitet,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: isHole 
-                      ? EngineeringTheme.infoColor.withAlpha(200) 
-                      : EngineeringTheme.errorColor.withAlpha(200),
-                ),
-              ),
-            ),
-            
-            // Tolerances in this qualitet as chips
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: tolerancesInGroup.map((tolerance) => 
-                  _buildToleranceChip(tolerance, isHole)
-                ).toList(),
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
+      
+      // Extract number part
+      RegExp numRegex = RegExp(r'(\d+)');
+      Match? numMatchA = numRegex.firstMatch(a);
+      Match? numMatchB = numRegex.firstMatch(b);
+      
+      // If we can extract numbers from both, sort numerically
+      if (numMatchA != null && numMatchB != null) {
+        int numA = int.parse(numMatchA.group(1) ?? '0');
+        int numB = int.parse(numMatchB.group(1) ?? '0');
+        return numA.compareTo(numB);
+      }
+      
+      // Fallback to standard string comparison
+      return a.compareTo(b);
+    });
   }
   
   // Build the no results widget

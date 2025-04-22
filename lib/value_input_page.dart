@@ -821,11 +821,12 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                     ),
                                     const SizedBox(height: 8),
                                     _buildCompactValueTile(
-                                      'Мин:',
-                                      minValueStr,
-                                      Icons.arrow_downward,
-                                      style.minValueColor,
-                                    ),
+                                      'Сред:',
+                                      avgValueStr,
+                                      Icons.sync_alt,
+                                      style.avgValueColor,
+                                    )
+                                    ,
                                   ],
                                 ),
                               ),
@@ -843,18 +844,19 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                 child: Column(
                                   children: [
                                     _buildCompactValueTile(
+                                      'Мин:',
+                                      minValueStr,
+                                      Icons.arrow_downward,
+                                      style.minValueColor,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _buildCompactValueTile(
                                       'Макс:',
                                       maxValueStr,
                                       Icons.arrow_upward,
                                       style.maxValueColor,
                                     ),
-                                    const SizedBox(height: 8),
-                                    _buildCompactValueTile(
-                                      'Сред:',
-                                      avgValueStr,
-                                      Icons.sync_alt,
-                                      style.avgValueColor,
-                                    ),
+                                    
                                   ],
                                 ),
                               ),
