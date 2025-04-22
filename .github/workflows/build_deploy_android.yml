@@ -113,6 +113,8 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Отправка уведомления в Telegram с APK и ссылкой на релиз
       - name: Send Telegram notification
