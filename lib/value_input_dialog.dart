@@ -2,9 +2,10 @@
 // Displays a dialog where users can enter a value and see tolerance application results
 
 import 'package:flutter/material.dart';
+import 'package:mobile_tolerance/core/utils/unit_converter.dart';
 import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/tolerance_constants.dart';
-import 'package:mobile_tolerance/unit_system.dart';
+import 'package:mobile_tolerance/core/models/unit_system.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Import our custom theme
 // import 'engineering_theme.dart';

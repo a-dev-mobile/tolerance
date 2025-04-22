@@ -6,7 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/search_dialog.dart';
 import 'package:mobile_tolerance/tolerance_data_source.dart';
-import 'package:mobile_tolerance/unit_system.dart';
+import 'package:mobile_tolerance/core/models/unit_system.dart';
 import 'package:mobile_tolerance/value_input_dialog.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
