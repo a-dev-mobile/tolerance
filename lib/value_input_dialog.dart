@@ -1,90 +1,74 @@
-// value_input_dialog.dart - Диалог для ввода значения и применения допуска
-// Отображает диалог, где пользователь может ввести значение и увидеть применение допуска
+// value_input_dialog.dart - Improved dialog for value input and tolerance application
+// Displays a dialog where users can enter a value and see tolerance application results
 
 import 'package:flutter/material.dart';
+import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/tolerance_constants.dart';
-import 'dart:math';
-import 'unit_system.dart';
+import 'package:mobile_tolerance/unit_system.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// Import our custom theme
+// import 'engineering_theme.dart';
 
-// Показывает диалог для ввода значения, к которому будет применен допуск
+// Shows a dialog for entering a value to which tolerance will be applied
 void showValueInputDialog({
   required BuildContext context, 
   required String columnName, 
   required String toleranceValue,
   required UnitSystem currentUnit
 }) {
-  // Контроллер для текстового поля
+  // Controller for the text field
   final TextEditingController controller = TextEditingController();
   
-  // Переменные для хранения результатов
+  // Variables for storing results
   double baseValue = 0.0;
   String minValueStr = '-';
   String maxValueStr = '-';
   String nominalValueStr = '-';
-  String avgValueStr = '-'; // Добавляем среднее значение
+  String avgValueStr = '-';
   
-  // Переменные для работы с интервалами
+  // Variables for interval handling
   String currentInterval = 'Не определено';
   bool isWithinInterval = true;
   String recommendedInterval = '';
-  double maxValueInTolerance = 500.0; // Значение по умолчанию
+  double maxValueInTolerance = 500.0; // Default value
   
-// Определяем, это допуск для вала или отверстия
-String typeOfPart = 'Не определено';
-if (columnName.isNotEmpty) {
-  // Ищем первую букву в строке допуска
-  RegExp letterRegex = RegExp(r'[A-Za-z]');
-  Match? match = letterRegex.firstMatch(columnName);
-  
-  if (match != null) {
-    String letter = match.group(0) ?? '';
+  // Determine if it's a hole or shaft
+  String typeOfPart = 'Не определено';
+  if (columnName.isNotEmpty) {
+    // Find the first letter in the tolerance string
+    RegExp letterRegex = RegExp(r'[A-Za-z]');
+    Match? match = letterRegex.firstMatch(columnName);
     
-    // Простое правило:
-    // Если буква заглавная (A-Z) - отверстие
-    // Если буква строчная (a-z) - вал
-    if (letter == letter.toUpperCase()) {
-      typeOfPart = 'Отверстие';
-    } else {
-      typeOfPart = 'Вал';
+    if (match != null) {
+      String letter = match.group(0) ?? '';
+      
+      // Simple rule:
+      // If the letter is uppercase (A-Z) - it's a hole
+      // If the letter is lowercase (a-z) - it's a shaft
+      if (letter == letter.toUpperCase()) {
+        typeOfPart = 'Отверстие';
+      } else {
+        typeOfPart = 'Вал';
+      }
     }
   }
-}
   
-  // Цвета для визуального выделения значений
-  // Получаем цвета исходя из текущей темы для лучшей совместимости с темной темой
-  final Brightness brightness = Theme.of(context).brightness;
-  final bool isDarkMode = brightness == Brightness.dark;
+  // Get the widget style based on the current theme
+  final style = EngineeringTheme.widgetStyle(context);
   
-  // Настраиваем цвета с учетом темы
-  final Color minColor = isDarkMode ? Colors.blue.shade400 : Colors.blue.shade700;
-  final Color maxColor = isDarkMode ? Colors.red.shade400 : Colors.red.shade700;
-  final Color avgColor = isDarkMode ? Colors.green.shade400 : Colors.green.shade700;
-  final Color nominalColor = isDarkMode ? Colors.orange.shade400 : Colors.orange.shade700;
-  final Color warningColor = isDarkMode ? Colors.deepOrange.shade300 : Colors.deepOrange;
-  final Color infoColor = isDarkMode ? Colors.indigo.shade300 : Colors.indigo;
-  
-  // Фоновые цвета для контейнеров, адаптированные под тему
-  final Color cardBackground = isDarkMode 
-      ? Colors.grey.shade800.withValues(alpha: 70) 
-      : Colors.grey.shade200.withValues(alpha: 150);
-      
-  final Color valueRowBackground = isDarkMode 
-      ? Colors.grey.shade900.withValues(alpha: 70) 
-      : Colors.white.withValues(alpha: 210);
-
-  // Функция для парсинга границ интервала
+  // Function to parse interval boundaries
   List<double> parseIntervalBoundaries(String intervalStr) {
-    // Формат: "0 > 3", "3 > 6", "24 > 30" и т.д.
+    // Format: "0 > 3", "3 > 6", "24 > 30" etc.
     List<double> result = [];
     
-    // Разделяем строку по символу >
+    // Split string by > symbol
     List<String> parts = intervalStr.split('>');
     if (parts.length != 2) return [];
     
     try {
-      // Парсим первое значение (минимум)
+      // Parse first value (minimum)
       double min = double.parse(parts[0].trim());
-      // Парсим второе значение (максимум)
+      // Parse second value (maximum)
       double max = double.parse(parts[1].trim());
       
       result = [min, max];
@@ -95,47 +79,47 @@ if (columnName.isNotEmpty) {
     return result;
   }
 
-  // Функция для определения интервала по значению
+  // Function to find the interval for a value
   String findIntervalForValue(double inputValue) {
     String result = 'Не определено';
     double closestDiff = double.infinity;
     String closestIntervalBelow = '';
     String closestIntervalAbove = '';
-    double maxAllowedValue = 0.0; // Максимальное значение среди всех интервалов
+    double maxAllowedValue = 0.0; // Maximum value among all intervals
     
-    // Проходим по всем интервалам в ToleranceConstants
+    // Go through all intervals in ToleranceConstants
     for (String intervalKey in ToleranceConstants.toleranceValues.keys) {
-      // Парсим границы интервала
+      // Parse interval boundaries
       List<double> boundaries = parseIntervalBoundaries(intervalKey);
       if (boundaries.isEmpty || boundaries.length != 2) continue;
       
       double min = boundaries[0];
       double max = boundaries[1];
       
-      // Обновляем максимальное значение
+      // Update maximum value
       if (max > maxAllowedValue) {
         maxAllowedValue = max;
       }
       
-      // Если значение попадает в интервал
+      // If value is within interval
       if (inputValue >= min && inputValue <= max) {
         return intervalKey;
       }
       
-      // Если значение меньше минимума, сохраняем ближайший интервал сверху
+      // If value is less than minimum, save the closest interval above
       if (inputValue < min && (min - inputValue < closestDiff)) {
         closestDiff = min - inputValue;
         closestIntervalAbove = intervalKey;
       }
       
-      // Если значение больше максимума, сохраняем ближайший интервал снизу
+      // If value is greater than maximum, save the closest interval below
       if (inputValue > max && (inputValue - max < closestDiff)) {
         closestDiff = inputValue - max;
         closestIntervalBelow = intervalKey;
       }
     }
     
-    // Если интервал не найден, возвращаем ближайший и сохраняем максимальное значение
+    // If interval is not found, return the closest and save maximum value
     if (result == 'Не определено') {
       if (closestIntervalBelow.isNotEmpty) {
         recommendedInterval = closestIntervalBelow;
@@ -143,28 +127,27 @@ if (columnName.isNotEmpty) {
         recommendedInterval = closestIntervalAbove;
       }
       
-      // Сохраняем максимальное значение для сообщения об ошибке
+      // Save maximum value for error message
       maxValueInTolerance = maxAllowedValue;
     }
     
     return result;
   }
   
-
-  // Парсим значение допуска - возвращает список значений отклонений
+  // Parse tolerance value - returns a list of deviation values
   List<double> parseTolerance(String toleranceStr) {
     if (toleranceStr.isEmpty || toleranceStr == '-') return [];
     
-    // Результат: [нижнее отклонение, верхнее отклонение]
+    // Result: [lower deviation, upper deviation]
     List<double> result = [];
     
-    // Разбиваем на строки, если есть
+    // Split into lines, if any
     List<String> lines = toleranceStr.split('\n');
     
     for (String line in lines) {
       if (line.isEmpty) continue;
       
-      // Очищаем строку и получаем знак
+      // Clean the string and get the sign
       String cleanLine = line.trim();
       String sign = '';
       
@@ -178,7 +161,7 @@ if (columnName.isNotEmpty) {
       
       try {
         double value = double.parse(cleanLine);
-        // Применяем знак
+        // Apply sign
         if (sign == '-') value = -value;
         
         result.add(value);
@@ -190,41 +173,41 @@ if (columnName.isNotEmpty) {
     return result;
   }
 
-  // Получаем значение допуска для текущего интервала
+  // Get tolerance value for current interval
   String getUpdatedToleranceForInterval(String originalTolerance, String intervalKey) {
     if (intervalKey == 'Не определено' || intervalKey == 'Ошибка') {
       return originalTolerance;
     }
     
-    // Получаем значения допусков для найденного интервала
+    // Get tolerance values for found interval
     Map<String, String>? intervalTolerances = ToleranceConstants.toleranceValues[intervalKey];
     if (intervalTolerances == null) {
       return originalTolerance;
     }
     
-    // Проверяем, есть ли допуск с таким же именем для нового интервала
+    // Check if there's a tolerance with the same name for the new interval
     String? newTolerance = intervalTolerances[columnName];
     if (newTolerance == null || newTolerance.isEmpty) {
-      return originalTolerance; // Если нет, оставляем оригинальное значение
+      return originalTolerance; // If not, keep original value
     }
     
     return newTolerance;
   }
 
-  // Вычисляем граничные значения на основе введенного базового значения
+  // Calculate boundary values based on entered base value
   void calculateValues(String inputValue) {
     try {
-      // Всегда интерпретируем ввод как миллиметры
+      // Always interpret input as millimeters
       baseValue = double.parse(inputValue);
       
-      // Определяем, к какому интервалу относится значение
+      // Determine which interval the value belongs to
       currentInterval = findIntervalForValue(baseValue);
       isWithinInterval = currentInterval != 'Не определено';
       
-      // Обновляем значение допуска, если интервал изменился
+      // Update tolerance value if interval changed
       String updatedToleranceValue = getUpdatedToleranceForInterval(toleranceValue, currentInterval);
       
-      // Парсим допуск
+      // Parse tolerance
       List<double> toleranceValues = parseTolerance(updatedToleranceValue);
       
       if (toleranceValues.isEmpty) {
@@ -235,47 +218,47 @@ if (columnName.isNotEmpty) {
         return;
       }
       
-      // Если только одно значение допуска (несимметричный допуск)
+      // If only one tolerance value (asymmetric tolerance)
       if (toleranceValues.length == 1) {
         double tolerance = toleranceValues[0];
         double minValue, maxValue;
         
         if (tolerance >= 0) {
-          // Положительный допуск: базовое значение + допуск
+          // Positive tolerance: base value + tolerance
           minValue = baseValue;
           maxValue = baseValue + tolerance;
         } else {
-          // Отрицательный допуск: базовое значение - допуск
-          minValue = baseValue + tolerance;  // tolerance уже отрицательный
+          // Negative tolerance: base value - tolerance
+          minValue = baseValue + tolerance;  // tolerance is already negative
           maxValue = baseValue;
         }
         
-        // Вычисляем среднее значение
+        // Calculate average value
         double avgValue = (minValue + maxValue) / 2;
 
-        // Конвертируем значения в выбранные единицы измерения
+        // Convert values to selected units
         minValueStr = UnitConverter.formatValue(minValue, currentUnit);
         maxValueStr = UnitConverter.formatValue(maxValue, currentUnit);
         avgValueStr = UnitConverter.formatValue(avgValue, currentUnit);
       } 
-      // Если два значения допуска (диапазон)
+      // If two tolerance values (range)
       else if (toleranceValues.length >= 2) {
-        // Сортируем, чтобы быть уверенными, что первый меньше
+        // Sort to ensure the first is smaller
         toleranceValues.sort();
         
         double minValue = baseValue + toleranceValues[0];
         double maxValue = baseValue + toleranceValues[toleranceValues.length - 1];
         
-        // Вычисляем среднее значение
+        // Calculate average value
         double avgValue = (minValue + maxValue) / 2;
         
-        // Конвертируем значения в выбранные единицы измерения
+        // Convert values to selected units
         minValueStr = UnitConverter.formatValue(minValue, currentUnit);
         maxValueStr = UnitConverter.formatValue(maxValue, currentUnit);
         avgValueStr = UnitConverter.formatValue(avgValue, currentUnit);
       }
       
-      // Форматируем номинальное значение
+      // Format nominal value
       nominalValueStr = UnitConverter.formatValue(baseValue, currentUnit);
     } catch (e) {
       nominalValueStr = 'Ошибка';
@@ -286,70 +269,103 @@ if (columnName.isNotEmpty) {
       isWithinInterval = false;
     }
   }
-  
-  // Создаем виджет для отображения значения с иконкой
-  Widget buildValueRow(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: valueRowBackground,
-        border: Border.all(
-          color: color.withValues(alpha: 40),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 20),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label, 
-              style: TextStyle(fontWeight: FontWeight.w500, color: color),
-            ),
-          ),
-          Text(
-            value, 
-            style: TextStyle(
-              fontWeight: FontWeight.bold, 
-              fontSize: 16,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
+  // Получение компактной подписи для отображения
+String _getShortLabel(String label) {
+  switch (label.trim()) {
+    case 'Номинальный размер':
+      return 'Ном:';
+    case 'Минимальный размер':
+      return 'Мин:';
+    case 'Максимальный размер':
+      return 'Макс:';
+    case 'Средний размер':
+      return 'Сред:';
+    default:
+      return label;
   }
+}
+
+// Получение полной подписи для подсказки
+String _getFullLabel(String label) {
+  switch (label.trim()) {
+    case 'Ном:':
+      return 'Номинальный размер';
+    case 'Мин:':
+      return 'Минимальный размер';
+    case 'Макс:':
+      return 'Максимальный размер';
+    case 'Сред:':
+      return 'Средний размер';
+    default:
+      return label;
+  }
+}
+  // Create widget for displaying value with icon
+  // Создание виджета для отображения значения с иконкой - компактная версия
+Widget buildValueRow(String label, String value, IconData icon, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    margin: const EdgeInsets.only(bottom: 8),
+    decoration: style.getValueRowDecoration(color),
+    child: Row(
+      children: [
+        // Иконка с подсказкой для обозначения типа значения
+        Tooltip(
+          message: _getFullLabel(label),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        // Компактная подпись
+        Expanded(
+          child: Text(
+            _getShortLabel(label), 
+            style: TextStyle(
+              fontWeight: FontWeight.w500, 
+              color: color,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        // Само значение в моноширинном шрифте для лучшего выравнивания
+        Text(
+          value, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            fontSize: 16,
+            color: color,
+            fontFamily: 'RobotoMono',
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
   
-  // Создаем виджет для отображения информации об интервале
+  // Create widget to display interval information
   Widget buildIntervalInfo(bool isWithinInterval, String interval, String recommended) {
+    final Brightness currentBrightness = Theme.of(context).brightness;
+    
     final Color bgColor = isWithinInterval 
-        ? isDarkMode ? infoColor.withValues(alpha: 20) : infoColor.withValues(alpha: 10)
-        : isDarkMode ? Colors.red.shade900.withValues(alpha: 70) : Colors.red.shade100.withValues(alpha: 180);
+        ? style.intervalBackground
+        : Colors.red.withAlpha(currentBrightness == Brightness.light ? 26 : 51); // 0.1, 0.2
         
     final Color borderColor = isWithinInterval 
-        ? isDarkMode ? infoColor.withValues(alpha: 80) : infoColor.withValues(alpha: 40)
-        : isDarkMode ? Colors.red.withValues(alpha: 150) : Colors.red.withValues(alpha: 140);
+        ? EngineeringTheme.infoColor.withAlpha(currentBrightness == Brightness.light ? 77 : 102)
+        : Colors.red.withAlpha(currentBrightness == Brightness.light ? 128 : 77); // 0.5, 0.3
     
     final IconData iconData = isWithinInterval 
-        ? Icons.check_circle 
-        : Icons.error;
+        ? Icons.check_circle_outline
+        : Icons.error_outline;
         
     final Color iconColor = isWithinInterval 
-        ? infoColor 
-        : isDarkMode ? Colors.red.shade300 : Colors.red.shade700;
+        ? style.infoColor
+        : Colors.red;
     
     return Container(
-      margin: const EdgeInsets.only(top: 16, bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      margin: const EdgeInsets.only(top: 16, bottom: 20),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: bgColor,
@@ -357,13 +373,6 @@ if (columnName.isNotEmpty) {
           color: borderColor,
           width: isWithinInterval ? 1 : 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 20),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -373,7 +382,7 @@ if (columnName.isNotEmpty) {
             color: iconColor,
             size: 24,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,19 +393,17 @@ if (columnName.isNotEmpty) {
                       : 'Ошибка! Значение вне допустимого диапазона',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: isWithinInterval ? 14 : 15,
-                    color: isWithinInterval ? infoColor : iconColor,
+                    fontSize: isWithinInterval ? 15 : 16,
+                    color: isWithinInterval ? style.infoColor : Colors.red,
                   ),
                 ),
                 if (!isWithinInterval) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     'Введите значение до $maxValueInTolerance мм',
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDarkMode 
-                          ? Colors.red.shade200
-                          : Colors.red.shade800,
+                      color: Colors.red.shade700,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -409,77 +416,134 @@ if (columnName.isNotEmpty) {
     );
   }
   
-  // Строка для отображения текущего допуска, который будет обновляться
+  // Variable for displayed tolerance value that will be updated
   String displayedToleranceValue = toleranceValue;
 
-  // Создаем stateful билдер для обновления результатов при вводе
+  // Create stateful builder to update results on input
   StatefulBuilder statefulBuilder = StatefulBuilder(
     builder: (context, setState) {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: isDarkMode ? Colors.grey.shade900 : Colors.white,
+        backgroundColor: style.surface,
         elevation: 8,
-        title: Text(
-              'Расчет размеров $columnName',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold
+        title: // Улучшенный заголовок для диалога расчета размеров
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    // Заголовок с подзаголовком
+    Row(
+      children: [
+        // Иконка в зависимости от типа детали
+        Icon(
+          typeOfPart == 'Отверстие' 
+              ? Icons.radio_button_unchecked 
+              : Icons.circle,
+          color: typeOfPart == 'Отверстие' 
+              ? style.infoColor 
+              : style.errorColor,
+          size: 24,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Расчет размеров',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: typeOfPart == 'Отверстие'
+                          ? style.infoColor.withAlpha(30)
+                          : style.errorColor.withAlpha(30),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      typeOfPart,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: typeOfPart == 'Отверстие'
+                            ? style.infoColor
+                            : style.errorColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      columnName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: typeOfPart == 'Отверстие'
+                            ? style.infoColor
+                            : style.errorColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+    // Разделитель
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Divider(height: 2, thickness: 1, color: style.divider),
+    ),
+  ],
+),
       
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Отображаем информацию о детали только если нет ошибки
+              // Display part information only if no error
               if (controller.text.isEmpty || isWithinInterval)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: cardBackground,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 10),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    )
-                  ],
-                ),
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: style.getCardDecoration(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      '$typeOfPart ($columnName)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
                     
-                      ),
-                    ),
-                    SizedBox(height: 4),
+   
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           controller.text.isEmpty ? "" : controller.text,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
+                            fontFamily: 'RobotoMono',
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          // Используем обновляемое значение допуска
                           controller.text.isEmpty ? toleranceValue : displayedToleranceValue,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
+                            fontFamily: 'RobotoMono',
                             color: typeOfPart == 'Отверстие' 
-                                ? isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700
-                                : isDarkMode ? Colors.red.shade300 : Colors.red.shade700,
+                                ? style.infoColor
+                                : style.errorColor,
                           ),
                         ),
                       ],
@@ -488,17 +552,18 @@ if (columnName.isNotEmpty) {
                 ),
               ),
 
-              // Отступ перед полем ввода зависит от наличия карточки выше
-              SizedBox(height: (controller.text.isEmpty || isWithinInterval) ? 16 : 8),
-              
-              // Поле ввода базового значения с иконкой и подсказкой "всегда в мм"
+              // Input field for base value with icon and hint
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
                   labelText: 'Номинальный размер',
                   hintText: 'Например: 10.5',
-                  prefixIcon: const Icon(Icons.edit),
+                  prefixIcon: Icon(Icons.straighten, color: style.nominalValueColor),
                   suffixText: 'мм',
+                  suffixStyle: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    color: style.textSecondary
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -506,43 +571,52 @@ if (columnName.isNotEmpty) {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (value) {
                   setState(() {
-                    // Получаем текущий интервал
+                    // Get current interval
                     String newInterval = value.isEmpty ? 'Не определено' : findIntervalForValue(double.tryParse(value) ?? 0.0);
                     
-                    // Получаем обновленное значение допуска для этого интервала
+                    // Get updated tolerance value for this interval
                     if (newInterval != 'Не определено' && newInterval != 'Ошибка') {
                       displayedToleranceValue = getUpdatedToleranceForInterval(toleranceValue, newInterval);
                     } else {
                       displayedToleranceValue = toleranceValue;
                     }
                     
-                    // Вычисляем значения с обновленным допуском
+                    // Calculate values with updated tolerance
                     calculateValues(value);
                     
-                    // Обновление происходит, так как setState вызывает перестроение всего виджета
+                    // Update happens because setState calls rebuilding of the entire widget
                   });
                 },
                 autofocus: true,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'RobotoMono', // Use monospace font for numerical input
+                ),
               ),
-              const SizedBox(height: 20),
               
-              // Информация об интервале (если введено значение)
+              // Interval information (if value is entered)
               if (controller.text.isNotEmpty)
                 buildIntervalInfo(isWithinInterval, currentInterval, recommendedInterval),
               
-              const SizedBox(height: 20),
-              
-              // Показываем значения только если значение в интервале
-              if (controller.text.isEmpty || isWithinInterval) ...[
-                // Используем созданный нами виджет для отображения значений
-                buildValueRow('Ном: ', nominalValueStr, Icons.crop_free, nominalColor),
-                const SizedBox(height: 8),
-                buildValueRow('Мин: ', minValueStr, Icons.arrow_downward, minColor),
-                const SizedBox(height: 8),
-                buildValueRow('Сред: ', avgValueStr, Icons.sync_alt, avgColor),
-                const SizedBox(height: 8),
-                buildValueRow('Макс: ', maxValueStr, Icons.arrow_upward, maxColor),
-              ],
+              // Show values only if value is within interval
+// Часть кода, отображающая результаты расчета
+if (controller.text.isEmpty || isWithinInterval) ...[
+  const Padding(
+    padding: EdgeInsets.only(bottom: 8),
+    child: Text(
+      'Результаты:',
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 15,
+      ),
+    ),
+  ),
+  // Используем компактные строки для мобильных устройств
+  buildValueRow('Номинальный размер', nominalValueStr, Icons.crop_free, style.nominalValueColor),
+  buildValueRow('Минимальный размер', minValueStr, Icons.arrow_downward, style.minValueColor),
+  buildValueRow('Средний размер', avgValueStr, Icons.sync_alt, style.avgValueColor),
+  buildValueRow('Максимальный размер', maxValueStr, Icons.arrow_upward, style.maxValueColor),
+],
             ],
           ),
         ),
@@ -552,11 +626,11 @@ if (columnName.isNotEmpty) {
               Navigator.of(context).pop();
             },
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: Text(
+            child: const Text(
               'Закрыть',
-     
+              style: TextStyle(fontSize: 16),
             ),
           ),
         ],
