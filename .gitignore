@@ -132,3 +132,4 @@ google-services.json
 firebase.json
 
 env_dart/*.json
+devtools_options.yaml

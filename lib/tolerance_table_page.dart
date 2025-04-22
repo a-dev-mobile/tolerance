@@ -7,6 +7,7 @@ import 'package:mobile_tolerance/engineering_theme.dart';
 import 'package:mobile_tolerance/search_dialog.dart';
 import 'package:mobile_tolerance/tolerance_data_source.dart';
 import 'package:mobile_tolerance/core/models/unit_system.dart';
+import 'package:mobile_tolerance/tolerance_search_page.dart';
 import 'package:mobile_tolerance/value_input_page.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -604,26 +605,26 @@ void _handleScroll() {
     );
   }
   
-  // Display search dialog
-  Future<void> _showSearchDialog() async {
-    // Get list of all tolerances (columns), excluding Interval
-    Set<String> allTolerances = {};
-    _toleranceDataSource.getAllColumnNames(allTolerances);
-    allTolerances.remove("Interval");
-    List<String> tolerancesList = allTolerances.toList()..sort();
-    
-    // Small delay for smoothness
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Show search dialog
-    final String? selectedTolerance = await showSearchDialog(context, tolerancesList);
-    
-    // If user selected a tolerance
-    if (selectedTolerance != null && mounted) {
-      _scrollToColumn(selectedTolerance);
-    }
-  }
+  // Display search page
+void _showSearchDialog() async {
+  // Get list of all tolerances (columns), excluding Interval
+  Set<String> allTolerances = {};
+  _toleranceDataSource.getAllColumnNames(allTolerances);
+  allTolerances.remove("Interval");
+  List<String> tolerancesList = allTolerances.toList()..sort();
   
+  // Navigate to search page and wait for result
+  navigateToSearchPage(
+    context, 
+    tolerancesList,
+    (selectedTolerance) {
+      // When a tolerance is selected, scroll to it
+      if (selectedTolerance.isNotEmpty) {
+        _scrollToColumn(selectedTolerance);
+      }
+    },
+  );
+}
   // Scroll to specified column and highlight it
   void _scrollToColumn(String columnName) {
     setState(() {
