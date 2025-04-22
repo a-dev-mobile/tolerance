@@ -2,9 +2,9 @@
 // Управляет данными таблицы и их отображением
 
 import 'package:flutter/material.dart';
-import 'package:mobile_tolerance/core/utils/unit_converter.dart';
+import 'package:tolerance/core/utils/unit_converter.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:mobile_tolerance/tolerance_constants.dart';
+import 'package:tolerance/tolerance_constants.dart';
 import 'core/models/unit_system.dart';
 
 // Класс-источник данных для таблицы допусков

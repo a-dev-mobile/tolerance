@@ -1,6 +1,6 @@
 
 // Константы для конвертации
-import 'package:mobile_tolerance/core/models/unit_system.dart';
+import 'package:tolerance/core/models/unit_system.dart';
 
 class UnitConverter {
   // Коэффициент перевода мм в дюймы

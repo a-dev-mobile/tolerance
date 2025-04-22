@@ -2,8 +2,8 @@
 // Contains the app widget and entry point with engineering design system
 
 import 'package:flutter/material.dart';
-import 'package:mobile_tolerance/engineering_theme.dart';
-import 'package:mobile_tolerance/tolerance_table_page.dart';
+import 'package:tolerance/engineering_theme.dart';
+import 'package:tolerance/tolerance_table_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Import our custom theme
 // import 'engineering_theme.dart';

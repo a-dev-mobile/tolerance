@@ -2,7 +2,7 @@
 // Заменяет диалог value_input_dialog.dart для лучшей поддержки мобильных устройств
 
 import 'package:flutter/material.dart';
-import 'package:mobile_tolerance/tolerance_constants.dart';
+import 'package:tolerance/tolerance_constants.dart';
 import 'core/models/unit_system.dart';
 import 'core/utils/unit_converter.dart';
 import 'engineering_theme.dart';
@@ -35,11 +35,11 @@ class ValueInputPage extends StatefulWidget {
   final UnitSystem currentUnit;
 
   const ValueInputPage({
-    Key? key,
+    super.key,
     required this.columnName,
     required this.toleranceValue,
     required this.currentUnit,
-  }) : super(key: key);
+  });
 
   @override
   State<ValueInputPage> createState() => _ValueInputPageState();
