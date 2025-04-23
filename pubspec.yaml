@@ -21,6 +21,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
 
 
   flutter_lints: ^5.0.0
@@ -31,3 +32,16 @@ flutter:
 
   uses-material-design: true
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  # Для стандартной иконки (все версии Android)
+  remove_alpha_ios: true
+  # Для адаптивных иконок (Android 8.0+)
+  adaptive_icon_background: "assets/icon/app_icon_background.png"
+  # Или можно использовать градиент из SVG (закомментировано):
+  # adaptive_icon_background: "#1A237E" # Цвет из вашего градиента
+  
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  
