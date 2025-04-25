@@ -1,6 +1,8 @@
 // tolerance_table_page.dart - Improved main page with tolerance table
 // Contains the page widget and its logic with engineering design system
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:tolerance/core/localization/app_localizations.dart';
 
@@ -47,6 +49,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   final ScrollController _verticalScrollController = ScrollController();
   final ScrollController _horizontalScrollController = ScrollController();
   
+  // Timer for scroll debouncing
+  Timer? _scrollDebounceTimer;
+  
   // Current theme mode (dark/light)
   bool _isDarkMode = false;
   
@@ -81,8 +86,27 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     _verticalScrollController.addListener(_saveScrollPosition);
     _horizontalScrollController.addListener(_saveScrollPosition);
     
+    // Add listener for scroll refresh
+    _verticalScrollController.addListener(_refreshOnScroll);
+    
     // Show tooltip after a delay on first launch
     _checkFirstLaunch();
+  }
+  
+  // New method to refresh grid on scroll
+  void _refreshOnScroll() {
+    // Cancel previous timer if it exists
+    _scrollDebounceTimer?.cancel();
+    
+    // Set a new timer
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        // This minimal setState ensures the DataGrid refreshes rows properly
+        setState(() {
+          // No need to change anything, just trigger a rebuild
+        });
+      }
+    });
   }
   
   void _handleScroll() {
@@ -155,6 +179,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
             if (_verticalScrollController.hasClients && 
                 savedScrollY <= _verticalScrollController.position.maxScrollExtent) {
               _verticalScrollController.jumpTo(savedScrollY);
+              
+              // Trigger a rebuild after restoring position
+              setState(() {});
             }
             
             setState(() {
@@ -205,10 +232,14 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Save scroll position before destroying widget
     _saveScrollPosition();
     
+    // Cancel any active timer
+    _scrollDebounceTimer?.cancel();
+    
     // Remove listeners
     _verticalScrollController.removeListener(_saveScrollPosition);
     _horizontalScrollController.removeListener(_saveScrollPosition);
     _verticalScrollController.removeListener(_handleScroll);
+    _verticalScrollController.removeListener(_refreshOnScroll);
     
     // Free resources
     _verticalScrollController.dispose();
@@ -284,6 +315,11 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
         onNotification: (ScrollNotification scrollInfo) {
           if (scrollInfo is ScrollEndNotification) {
             _saveScrollPosition();
+            
+            // Trigger rebuild at end of scroll to ensure all rows are visible
+            if (scrollInfo.metrics.axis == Axis.vertical) {
+              setState(() {});
+            }
           }
           return false;
         },
@@ -687,6 +723,13 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       selectionMode: SelectionMode.none,
       navigationMode: GridNavigationMode.row,
       showCheckboxColumn: false,
+      // Ensure a large enough cache extent to keep rows loaded
+      loadMoreViewBuilder: (BuildContext context, LoadMoreRows? loadMoreRows) {
+        return const SizedBox.shrink();
+      },
+      // Add these two properties to help with row recycling issues
+      frozenRowsCount: 0,
+      rowsPerPage: 20, // Adjust based on your actual data size
     );
   }
   
