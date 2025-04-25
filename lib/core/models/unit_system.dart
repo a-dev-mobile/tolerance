@@ -12,6 +12,7 @@ enum UnitSystem {
 extension UnitSystemExtension on UnitSystem {
   // Возвращает символ единицы измерения
   String get symbol {
+    // Эти символы обычно не локализуются, так как являются международными обозначениями
     switch (this) {
       case UnitSystem.millimeters:
         return 'мм';
@@ -19,6 +20,18 @@ extension UnitSystemExtension on UnitSystem {
         return 'in';
       case UnitSystem.microns:
         return 'мкм';
+    }
+  }
+  
+  // Возвращает локализованный символ единицы измерения (использовать с context.t)
+  String get localizationKey {
+    switch (this) {
+      case UnitSystem.millimeters:
+        return 'mm';
+      case UnitSystem.inches:
+        return 'in';
+      case UnitSystem.microns:
+        return 'microns';
     }
   }
   
@@ -33,16 +46,16 @@ extension UnitSystemExtension on UnitSystem {
         return 0;
     }
   }
-
-  // Возвращает название единицы измерения для отображения
-  String get displayName {
+  
+  // Возвращает ключ для локализованного названия единицы измерения
+  String get displayNameKey {
     switch (this) {
       case UnitSystem.millimeters:
-        return 'миллиметры';
+        return 'millimeters';
       case UnitSystem.inches:
-        return 'дюймы';
+        return 'inches';
       case UnitSystem.microns:
-        return 'микроны';
+        return 'microns';
     }
   }
 }

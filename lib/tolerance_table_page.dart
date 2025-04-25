@@ -256,7 +256,13 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       ),
     );
   }
-
+  
+  // Method to change language
+  void _changeLanguage(String languageCode) {
+    final newLocale = Locale(languageCode);
+    widget.setLocale(newLocale);
+  }
+  
   @override
   Widget build(BuildContext context) {
     // Determine current theme
@@ -351,10 +357,6 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
         ],
       ),
       actions: [
-        // Language selector
-        LanguageSelector(
-          onLocaleChanged: widget.setLocale,
-        ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (value) {
@@ -368,48 +370,137 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               case 'theme':
                 _toggleTheme();
                 break;
+              case 'language_en':
+                _changeLanguage('en');
+                break;
+              case 'language_ru':
+                _changeLanguage('ru');
+                break;
               case 'about':
                 _showAboutDialog();
                 break;
             }
           },
-          itemBuilder: (BuildContext context) => [
-            PopupMenuItem<String>(
-              value: 'search',
-              child: ListTile(
-                leading: const Icon(Icons.search),
-                title: Text(context.t('search_tolerance')),
-                contentPadding: EdgeInsets.zero,
+          itemBuilder: (BuildContext context) {
+            // Get current locale
+            final currentLocale = Localizations.localeOf(context);
+            final isEnglish = currentLocale.languageCode == 'en';
+            
+            return [
+              PopupMenuItem<String>(
+                value: 'search',
+                child: ListTile(
+                  leading: const Icon(Icons.search),
+                  title: Text(context.t('search_tolerance')),
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
-            ),
-            // Add menu item for switching units
-            PopupMenuItem<String>(
-              value: 'units',
-              child: ListTile(
-                leading: const Icon(Icons.straighten),
-                title: Text(context.t('units_with_value', args: {'units_value': _currentUnit.symbol})),
-                subtitle: Text(context.t('tap_to_change_units')),
-                contentPadding: EdgeInsets.zero,
+              // Add menu item for switching units
+              PopupMenuItem<String>(
+                value: 'units',
+                child: ListTile(
+                  leading: const Icon(Icons.straighten),
+                  title: Text(context.t('units_with_value', args: {'units_value': _currentUnit.symbol})),
+                  subtitle: Text(context.t('tap_to_change_units')),
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
-            ),
-            // Add menu item for switching theme
-            PopupMenuItem<String>(
-              value: 'theme',
-              child: ListTile(
-                leading: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-                title: Text(_isDarkMode ? context.t('light_theme') : context.t('dark_theme')),
-                contentPadding: EdgeInsets.zero,
+              // Add menu item for switching theme
+              PopupMenuItem<String>(
+                value: 'theme',
+                child: ListTile(
+                  leading: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                  title: Text(_isDarkMode ? context.t('light_theme') : context.t('dark_theme')),
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
-            ),
-            PopupMenuItem<String>(
-              value: 'about',
-              child: ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: Text(context.t('about')),
-                contentPadding: EdgeInsets.zero,
+              // Language submenu
+              PopupMenuItem<String>(
+                value: 'language',
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.language,
+                            size: 20,
+                            color: EngineeringTheme.getTextColor(Theme.of(context).brightness, false),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            context.t('change_language'),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: EngineeringTheme.getTextColor(Theme.of(context).brightness, true),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              // English option
+              PopupMenuItem<String>(
+                value: 'language_en',
+                child: ListTile(
+                  leading: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: isEnglish ? EngineeringTheme.primaryBlue : Colors.transparent,
+                    child: Text(
+                      'EN',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isEnglish 
+                          ? Colors.white 
+                          : EngineeringTheme.getTextColor(Theme.of(context).brightness, true),
+                      ),
+                    ),
+                  ),
+                  title: Text(context.t('language_en')),
+                  trailing: isEnglish ? Icon(Icons.check, color: EngineeringTheme.successColor) : null,
+                  contentPadding: const EdgeInsets.only(left: 32),
+                ),
+              ),
+              // Russian option
+              PopupMenuItem<String>(
+                value: 'language_ru',
+                child: ListTile(
+                  leading: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: !isEnglish ? EngineeringTheme.primaryBlue : Colors.transparent,
+                    child: Text(
+                      'RU',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: !isEnglish 
+                          ? Colors.white 
+                          : EngineeringTheme.getTextColor(Theme.of(context).brightness, true),
+                      ),
+                    ),
+                  ),
+                  title: Text(context.t('language_ru')),
+                  trailing: !isEnglish ? Icon(Icons.check, color: EngineeringTheme.successColor) : null,
+                  contentPadding: const EdgeInsets.only(left: 32),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'about',
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(context.t('about')),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ];
+          },
         ),
       ],
       bottom: PreferredSize(
@@ -547,19 +638,17 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               context.t('version', args: {'version_number': '1.3.0'}),
               style: const TextStyle(fontSize: 14),
             ),
-             
-              
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
               Navigator.of(context).pop();
             },
             child: Text(context.t('close')),
-            ),
-          ],
-        );
+          ),
+        ],
+      );
       },
     );
   }

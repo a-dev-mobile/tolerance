@@ -36,7 +36,7 @@ class OnboardingLanguagePage extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
               
               // Title - use static text for initial language selection screen
               const Text(

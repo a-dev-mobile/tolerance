@@ -229,7 +229,7 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                       // Use white text when selected for better contrast, otherwise use primary color
                       color: activeCategory == 'all' 
                           ? Colors.white 
-                          : EngineeringTheme.primaryBlue,
+                          : EngineeringTheme.secondaryBlue,
                       fontSize: 14,
                     ),
                   ),
@@ -258,11 +258,11 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                       _filterTolerances(controller.text);
                     });
                   },
-                  avatar: Icon(
+                  avatar:  activeCategory != 'all'?Icon(
                     Icons.list,
-                    color: activeCategory == 'all' ? Colors.white : EngineeringTheme.primaryBlue,
+                    color: activeCategory == 'all' ? Colors.white : EngineeringTheme.secondaryBlue,
                     size: 18,
-                  ),
+                  ):null,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 ),
               ),
