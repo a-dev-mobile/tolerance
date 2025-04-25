@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'engineering_theme.dart';
+import 'core/localization/app_localizations.dart'; // Add this
 
 // Constants for SharedPreferences keys
 const String _keySearchHistory = 'searchHistory'; // Key for search history
@@ -16,11 +17,10 @@ void navigateToSearchPage(
 ) {
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder:
-          (context) => ToleranceSearchPage(
-            tolerances: tolerances,
-            onToleranceSelected: onSelect,
-          ),
+      builder: (context) => ToleranceSearchPage(
+        tolerances: tolerances,
+        onToleranceSelected: onSelect,
+      ),
     ),
   );
 }
@@ -139,24 +139,20 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
         }
 
         // First add items from history that match
-        List<String> historyMatches =
-            searchHistory
-                .where(
-                  (tolerance) =>
-                      tolerance.contains(query) &&
-                      sourceList.contains(tolerance),
-                )
-                .toList();
+        List<String> historyMatches = searchHistory
+            .where(
+              (tolerance) =>
+                  tolerance.contains(query) && sourceList.contains(tolerance),
+            )
+            .toList();
 
         // Then add other items that match but aren't in history
-        List<String> otherMatches =
-            sourceList
-                .where(
-                  (tolerance) =>
-                      tolerance.contains(query) &&
-                      !historyMatches.contains(tolerance),
-                )
-                .toList();
+        List<String> otherMatches = sourceList
+            .where(
+              (tolerance) =>
+                  tolerance.contains(query) && !historyMatches.contains(tolerance),
+            )
+            .toList();
 
         // Combine results
         filteredTolerances = [...historyMatches, ...otherMatches];
@@ -203,8 +199,8 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            labelText: 'Поиск допуска',
-            hintText: 'Введите обозначение',
+            labelText: context.t('search_tolerance'),
+            hintText: context.t('enter_designation'),
             prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding: const EdgeInsets.symmetric(
@@ -227,14 +223,13 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   label: Text(
-                    'Все допуски',
+                    context.t('all_tolerances'),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       // Use white text when selected for better contrast, otherwise use primary color
-                      color:
-                          activeCategory == 'all'
-                              ? Colors.white
-                              : EngineeringTheme.primaryBlue,
+                      color: activeCategory == 'all' 
+                          ? Colors.white 
+                          : EngineeringTheme.primaryBlue,
                       fontSize: 14,
                     ),
                   ),
@@ -243,15 +238,13 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                   selectedColor: EngineeringTheme.primaryBlue,
                   checkmarkColor: Colors.white,
                   // Improved background and border when not selected
-                  backgroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade200,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.grey.shade800
+                      : Colors.grey.shade200,
                   side: BorderSide(
-                    color:
-                        activeCategory == 'all'
-                            ? EngineeringTheme.primaryBlue
-                            : Theme.of(context).brightness == Brightness.dark
+                    color: activeCategory == 'all'
+                        ? EngineeringTheme.primaryBlue
+                        : Theme.of(context).brightness == Brightness.dark
                             ? Colors.grey.shade600
                             : Colors.grey.shade400,
                     width: 1.5,
@@ -265,30 +258,37 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                       _filterTolerances(controller.text);
                     });
                   },
-  avatar:  activeCategory != 'all' ? Icon(
-            Icons.list,
-            color: activeCategory == 'all' ? Colors.white : EngineeringTheme.primaryBlue,
-            size: 18,
-          ):null,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        ),    ),
+                  avatar: Icon(
+                    Icons.list,
+                    color: activeCategory == 'all' ? Colors.white : EngineeringTheme.primaryBlue,
+                    size: 18,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                ),
+              ),
 
               // Holes
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   label: Text(
-                    'Отверстия (${holeTolerances.length})',
+                    context.t('holes_count', args: {'count': holeTolerances.length.toString()}),
                     style: TextStyle(
                       color:
                           activeCategory == 'holes'
                               ? Colors.white
                               : EngineeringTheme.infoColor,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   selected: activeCategory == 'holes',
                   selectedColor: EngineeringTheme.infoColor,
                   checkmarkColor: Colors.white,
+                  elevation: activeCategory == 'holes' ? 2 : 0,
+                  shadowColor: EngineeringTheme.infoColor.withAlpha(100),
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.grey.shade800
+                      : Colors.grey.shade200,
                   onSelected: (selected) {
                     setState(() {
                       activeCategory = 'holes';
@@ -302,24 +302,32 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                         activeCategory == 'holes'
                             ? Colors.white
                             : EngineeringTheme.infoColor,
+                    size: 18,
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 ),
               ),
 
               // Shafts
               FilterChip(
                 label: Text(
-                  'Валы (${shaftTolerances.length})',
+                  context.t('shafts_count', args: {'count': shaftTolerances.length.toString()}),
                   style: TextStyle(
                     color:
                         activeCategory == 'shafts'
                             ? Colors.white
                             : EngineeringTheme.errorColor,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 selected: activeCategory == 'shafts',
                 selectedColor: EngineeringTheme.errorColor,
                 checkmarkColor: Colors.white,
+                elevation: activeCategory == 'shafts' ? 2 : 0,
+                shadowColor: EngineeringTheme.errorColor.withAlpha(100),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.grey.shade800
+                    : Colors.grey.shade200,
                 onSelected: (selected) {
                   setState(() {
                     activeCategory = 'shafts';
@@ -333,8 +341,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                       activeCategory == 'shafts'
                           ? Colors.white
                           : EngineeringTheme.errorColor,
-                  size: 18,
+                  size: 16,
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
             ],
           ),
@@ -371,9 +380,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                 color: EngineeringTheme.primaryBlue,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'НЕДАВНО ИСПОЛЬЗОВАННЫЕ',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              Text(
+                context.t('recently_used'),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -383,15 +392,12 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children:
-              recentTolerances.map((tolerance) {
-                // Determine if it's a hole or shaft
-                bool isHole =
-                    tolerance.isNotEmpty &&
-                    tolerance[0] == tolerance[0].toUpperCase();
+          children: recentTolerances.map((tolerance) {
+            // Determine if it's a hole or shaft
+            bool isHole = tolerance.isNotEmpty && tolerance[0] == tolerance[0].toUpperCase();
 
-                return _buildToleranceChip(tolerance, isHole, isRecent: true);
-              }).toList(),
+            return _buildToleranceChip(tolerance, isHole, isRecent: true);
+          }).toList(),
         ),
 
         const Divider(height: 32),
@@ -405,10 +411,7 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
     bool isHole, {
     bool isRecent = false,
   }) {
-    final Color baseColor =
-        isHole ? EngineeringTheme.infoColor : EngineeringTheme.errorColor;
-
-    final String partType = isHole ? 'Отверстие' : 'Вал';
+    final Color baseColor = isHole ? EngineeringTheme.infoColor : EngineeringTheme.errorColor;
 
     return InkWell(
       onTap: () => _selectTolerance(tolerance),
@@ -446,15 +449,13 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
   // Build the tolerance categories section
   Widget _buildToleranceCategoriesSection() {
     // Split by hole and shaft
-    List<String> holeTolerances =
-        filteredTolerances
-            .where((t) => t.isNotEmpty && t[0] == t[0].toUpperCase())
-            .toList();
+    List<String> holeTolerances = filteredTolerances
+        .where((t) => t.isNotEmpty && t[0] == t[0].toUpperCase())
+        .toList();
 
-    List<String> shaftTolerances =
-        filteredTolerances
-            .where((t) => t.isNotEmpty && t[0] == t[0].toLowerCase())
-            .toList();
+    List<String> shaftTolerances = filteredTolerances
+        .where((t) => t.isNotEmpty && t[0] == t[0].toLowerCase())
+        .toList();
 
     // Sort tolerances by prefix then by IT grade
     _sortTolerancesByNaturalOrder(holeTolerances);
@@ -486,9 +487,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                   color: EngineeringTheme.infoColor,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'ОТВЕРСТИЯ',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                Text(
+                  context.t('holes').toUpperCase(),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -498,10 +499,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children:
-                holeTolerances
-                    .map((tolerance) => _buildToleranceChip(tolerance, true))
-                    .toList(),
+            children: holeTolerances
+                .map((tolerance) => _buildToleranceChip(tolerance, true))
+                .toList(),
           ),
 
           const SizedBox(height: 24),
@@ -530,9 +530,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                   color: EngineeringTheme.errorColor,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'ВАЛЫ',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                Text(
+                  context.t('shafts').toUpperCase(),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -542,10 +542,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children:
-                shaftTolerances
-                    .map((tolerance) => _buildToleranceChip(tolerance, false))
-                    .toList(),
+            children: shaftTolerances
+                .map((tolerance) => _buildToleranceChip(tolerance, false))
+                .toList(),
           ),
         ],
       ],
@@ -601,7 +600,7 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Нет результатов по запросу "${controller.text}"',
+            context.t('no_results', args: {'query': controller.text}),
             style: TextStyle(
               fontStyle: FontStyle.italic,
               fontSize: 16,
@@ -619,7 +618,7 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
               _filterTolerances('');
             },
             icon: const Icon(Icons.refresh),
-            label: const Text('Очистить поиск'),
+            label: Text(context.t('clear_search')),
           ),
         ],
       ),
@@ -628,11 +627,9 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final style = EngineeringTheme.widgetStyle(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Поиск допуска'),
+        title: Text(context.t('search_tolerance_title')),
         elevation: 2,
         actions: [
           // Clear button
@@ -643,17 +640,17 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                 controller.clear();
                 _filterTolerances('');
               },
-              tooltip: 'Очистить поиск',
+              tooltip: context.t('clear_search'),
             ),
         ],
       ),
       body: GestureDetector(
-        // Добавляем обработчик тапа для закрытия клавиатуры
+        // Add tap handler to close keyboard
         onTap: () {
-          // Закрываем клавиатуру при тапе по пустому месту
+          // Close keyboard when tapping empty space
           FocusScope.of(context).unfocus();
         },
-        // Обеспечиваем, что GestureDetector отслеживает все тапы
+        // Ensure GestureDetector tracks all taps
         behavior: HitTestBehavior.translucent,
         child: SafeArea(
           child: Padding(
@@ -671,22 +668,21 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                   )
                 else
                   Expanded(
-                    child:
-                        filteredTolerances.isEmpty
-                            ? _buildNoResultsWidget()
-                            : SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Recent tolerances section
-                                  if (showRecent && recentTolerances.isNotEmpty)
-                                    _buildRecentTolerancesSection(),
+                    child: filteredTolerances.isEmpty
+                        ? _buildNoResultsWidget()
+                        : SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Recent tolerances section
+                                if (showRecent && recentTolerances.isNotEmpty)
+                                  _buildRecentTolerancesSection(),
 
-                                  // Tolerances by category
-                                  _buildToleranceCategoriesSection(),
-                                ],
-                              ),
+                                // Tolerances by category
+                                _buildToleranceCategoriesSection(),
+                              ],
                             ),
+                          ),
                   ),
               ],
             ),

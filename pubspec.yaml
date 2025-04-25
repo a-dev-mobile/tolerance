@@ -13,6 +13,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   syncfusion_flutter_datagrid: ^29.1.38
   shared_preferences: ^2.5.3
   

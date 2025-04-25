@@ -1,13 +1,13 @@
-// Страница для ввода значения и расчета допусков
-
+// Updated value_input_page.dart with localization support
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tolerance/tolerance_constants.dart';
+import 'engineering_theme.dart';
 import 'core/models/unit_system.dart';
 import 'core/utils/unit_converter.dart';
-import 'engineering_theme.dart';
+import 'core/localization/app_localizations.dart'; // Add this
 
-// Класс для представления результатов расчета
+// Class to represent calculation results
 class ToleranceResult {
   final String baseValue;
   final String minValue;
@@ -28,7 +28,7 @@ class ToleranceResult {
   });
 }
 
-// Страница для ввода значения вместо диалога
+// Page for value input instead of dialog
 class ValueInputPage extends StatefulWidget {
   final String columnName;
   final String toleranceValue;
@@ -46,76 +46,89 @@ class ValueInputPage extends StatefulWidget {
 }
 
 class _ValueInputPageState extends State<ValueInputPage> {
-  // Контроллер для текстового поля
+  // Controller for text field
   final TextEditingController controller = TextEditingController();
 
-  // Переменные для хранения результатов
+  // Variables for storing results
   double baseValue = 0.0;
   String minValueStr = '-';
   String maxValueStr = '-';
   String nominalValueStr = '-';
   String avgValueStr = '-';
 
-  // Переменные для обработки интервала
-  String currentInterval = 'Не определено';
+  // Variables for interval handling
+
+  String currentInterval = '';
   bool isWithinInterval = true;
   String recommendedInterval = '';
-  double maxValueInTolerance = 500.0; // Значение по умолчанию
+  double maxValueInTolerance = 500.0; // Default value
 
-  // Определение типа детали (отверстие или вал)
-  String typeOfPart = 'Не определено';
+  // Determining part type (hole or shaft)
+  String typeOfPart = '';  // Initialize empty
 
-  // Переменная для отображаемого значения допуска
+  // Variable for displayed tolerance value
   String displayedToleranceValue = '';
 
-  // Переменная для отслеживания состояния копирования
+  // Variable to track copy state
   bool _justCopied = false;
 
   @override
   void initState() {
     super.initState();
-    // Инициализация отображаемого значения допуска
+    // Initialize displayed tolerance value
     displayedToleranceValue = widget.toleranceValue;
 
-    // Определение типа детали
+    // Determine part type
     _determinePartType();
   }
-
-  // Определение типа детали (отверстие или вал)
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Now it's safe to access context.t()
+    if (currentInterval.isEmpty) {
+      currentInterval = context.t('interval_not_defined');
+    }
+    
+    if (typeOfPart.isEmpty) {
+      typeOfPart = context.t('part_not_defined');
+    }
+  }
+  // Determine part type (hole or shaft)
   void _determinePartType() {
     if (widget.columnName.isNotEmpty) {
-      // Ищем первую букву в строке допуска
+      // Find first letter in tolerance designation
       RegExp letterRegex = RegExp(r'[A-Za-z]');
       Match? match = letterRegex.firstMatch(widget.columnName);
 
       if (match != null) {
         String letter = match.group(0) ?? '';
 
-        // Простое правило:
-        // Если буква в верхнем регистре (A-Z) - это отверстие
-        // Если буква в нижнем регистре (a-z) - это вал
+        // Simple rule:
+        // If letter is uppercase (A-Z) - it's a hole
+        // If letter is lowercase (a-z) - it's a shaft
         if (letter == letter.toUpperCase()) {
-          typeOfPart = 'Отверстие';
+          typeOfPart = 'hole';
         } else {
-          typeOfPart = 'Вал';
+          typeOfPart = 'shaft';
         }
       }
     }
   }
 
-  // Разбор границ интервала
+  // Parse interval boundaries
   List<double> parseIntervalBoundaries(String intervalStr) {
-    // Формат: "0 > 3", "3 > 6", "24 > 30" и т.д.
+    // Format: "0 > 3", "3 > 6", "24 > 30" etc.
     List<double> result = [];
 
-    // Разделяем строку по символу >
+    // Split string by > symbol
     List<String> parts = intervalStr.split('>');
     if (parts.length != 2) return [];
 
     try {
-      // Разбор первого значения (минимум)
+      // Parse first value (minimum)
       double min = double.parse(parts[0].trim());
-      // Разбор второго значения (максимум)
+      // Parse second value (maximum)
       double max = double.parse(parts[1].trim());
 
       result = [min, max];
@@ -126,75 +139,75 @@ class _ValueInputPageState extends State<ValueInputPage> {
     return result;
   }
 
-  // Поиск интервала для значения
+  // Find interval for value
   String findIntervalForValue(double inputValue) {
-    String result = 'Не определено';
+    String result = context.t('interval_not_defined');
     double closestDiff = double.infinity;
     String closestIntervalBelow = '';
     String closestIntervalAbove = '';
-    double maxAllowedValue = 0.0; // Максимальное значение среди всех интервалов
+    double maxAllowedValue = 0.0; // Maximum value among all intervals
 
-    // Перебираем все интервалы в ToleranceConstants
+    // Iterate through all intervals in ToleranceConstants
     for (String intervalKey in ToleranceConstants.toleranceValues.keys) {
-      // Разбор границ интервала
+      // Parse interval boundaries
       List<double> boundaries = parseIntervalBoundaries(intervalKey);
       if (boundaries.isEmpty || boundaries.length != 2) continue;
 
       double min = boundaries[0];
       double max = boundaries[1];
 
-      // Обновление максимального значения
+      // Update maximum value
       if (max > maxAllowedValue) {
         maxAllowedValue = max;
       }
 
-      // Если значение находится в интервале
+      // If value is in interval
       if (inputValue >= min && inputValue <= max) {
         return intervalKey;
       }
 
-      // Если значение меньше минимума, сохраняем ближайший интервал выше
+      // If value is less than minimum, save closest interval above
       if (inputValue < min && (min - inputValue < closestDiff)) {
         closestDiff = min - inputValue;
         closestIntervalAbove = intervalKey;
       }
 
-      // Если значение больше максимума, сохраняем ближайший интервал ниже
+      // If value is greater than maximum, save closest interval below
       if (inputValue > max && (inputValue - max < closestDiff)) {
         closestDiff = inputValue - max;
         closestIntervalBelow = intervalKey;
       }
     }
 
-    // Если интервал не найден, возвращаем ближайший и сохраняем максимальное значение
-    if (result == 'Не определено') {
+    // If interval not found, return closest and save maximum value
+    if (result == context.t('interval_not_defined')) {
       if (closestIntervalBelow.isNotEmpty) {
         recommendedInterval = closestIntervalBelow;
       } else if (closestIntervalAbove.isNotEmpty) {
         recommendedInterval = closestIntervalAbove;
       }
 
-      // Сохраняем максимальное значение для сообщения об ошибке
+      // Save maximum value for error message
       maxValueInTolerance = maxAllowedValue;
     }
 
     return result;
   }
 
-  // Разбор допуска - возвращает список значений отклонений
+  // Parse tolerance - returns list of deviation values
   List<double> parseTolerance(String toleranceStr) {
     if (toleranceStr.isEmpty || toleranceStr == '-') return [];
 
-    // Результат: [нижнее отклонение, верхнее отклонение]
+    // Result: [lower deviation, upper deviation]
     List<double> result = [];
 
-    // Разделение на строки, если есть
+    // Split into lines, if any
     List<String> lines = toleranceStr.split('\n');
 
     for (String line in lines) {
       if (line.isEmpty) continue;
 
-      // Очистка строки и получение знака
+      // Clean string and get sign
       String cleanLine = line.trim();
       String sign = '';
 
@@ -208,7 +221,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
 
       try {
         double value = double.parse(cleanLine);
-        // Применение знака
+        // Apply sign
         if (sign == '-') value = -value;
 
         result.add(value);
@@ -220,48 +233,49 @@ class _ValueInputPageState extends State<ValueInputPage> {
     return result;
   }
 
-  // Получение обновленного допуска для интервала
+  // Get updated tolerance for interval
   String getUpdatedToleranceForInterval(
     String originalTolerance,
     String intervalKey,
   ) {
-    if (intervalKey == 'Не определено' || intervalKey == 'Ошибка') {
+    if (intervalKey == context.t('interval_not_defined') ||
+        intervalKey == 'Ошибка') {
       return originalTolerance;
     }
 
-    // Получение значений допуска для найденного интервала
+    // Get tolerance values for found interval
     Map<String, String>? intervalTolerances =
         ToleranceConstants.toleranceValues[intervalKey];
     if (intervalTolerances == null) {
       return originalTolerance;
     }
 
-    // Проверка наличия допуска с тем же именем для нового интервала
+    // Check if tolerance with same name exists for new interval
     String? newTolerance = intervalTolerances[widget.columnName];
     if (newTolerance == null || newTolerance.isEmpty) {
-      return originalTolerance; // Если нет, сохраняем исходное значение
+      return originalTolerance; // If not, keep original value
     }
 
     return newTolerance;
   }
 
-  // Расчет граничных значений на основе введенного базового значения
+  // Calculate boundary values based on entered base value
   void calculateValues(String inputValue) {
     try {
-      // Всегда интерпретируем ввод как миллиметры
+      // Always interpret input as millimeters
       baseValue = double.parse(inputValue);
 
-      // Определение интервала, к которому принадлежит значение
+      // Determine interval to which value belongs
       currentInterval = findIntervalForValue(baseValue);
-      isWithinInterval = currentInterval != 'Не определено';
+      isWithinInterval = currentInterval != context.t('interval_not_defined');
 
-      // Обновление значения допуска, если интервал изменился
+      // Update tolerance value if interval changed
       String updatedToleranceValue = getUpdatedToleranceForInterval(
         widget.toleranceValue,
         currentInterval,
       );
 
-      // Разбор допуска
+      // Parse tolerance
       List<double> toleranceValues = parseTolerance(updatedToleranceValue);
 
       if (toleranceValues.isEmpty) {
@@ -275,48 +289,48 @@ class _ValueInputPageState extends State<ValueInputPage> {
         return;
       }
 
-      // Если только одно значение допуска (асимметричный допуск)
+      // If only one tolerance value (asymmetric tolerance)
       if (toleranceValues.length == 1) {
         double tolerance = toleranceValues[0];
         double minValue, maxValue;
 
         if (tolerance >= 0) {
-          // Положительный допуск: базовое значение + допуск
+          // Positive tolerance: base value + tolerance
           minValue = baseValue;
           maxValue = baseValue + tolerance;
         } else {
-          // Отрицательный допуск: базовое значение - допуск
-          minValue = baseValue + tolerance; // tolerance уже отрицательный
+          // Negative tolerance: base value - tolerance
+          minValue = baseValue + tolerance; // tolerance is already negative
           maxValue = baseValue;
         }
 
-        // Расчет среднего значения
+        // Calculate average value
         double avgValue = (minValue + maxValue) / 2;
 
-        // Конвертация значений в выбранные единицы
+        // Convert values to selected units
         minValueStr = UnitConverter.formatValue(minValue, widget.currentUnit);
         maxValueStr = UnitConverter.formatValue(maxValue, widget.currentUnit);
         avgValueStr = UnitConverter.formatValue(avgValue, widget.currentUnit);
       }
-      // Если два значения допуска (диапазон)
+      // If two tolerance values (range)
       else if (toleranceValues.length >= 2) {
-        // Сортировка для гарантии, что первое значение меньше
+        // Sort to ensure first value is smaller
         toleranceValues.sort();
 
         double minValue = baseValue + toleranceValues[0];
         double maxValue =
             baseValue + toleranceValues[toleranceValues.length - 1];
 
-        // Расчет среднего значения
+        // Calculate average value
         double avgValue = (minValue + maxValue) / 2;
 
-        // Конвертация значений в выбранные единицы
+        // Convert values to selected units
         minValueStr = UnitConverter.formatValue(minValue, widget.currentUnit);
         maxValueStr = UnitConverter.formatValue(maxValue, widget.currentUnit);
         avgValueStr = UnitConverter.formatValue(avgValue, widget.currentUnit);
       }
 
-      // Форматирование номинального значения
+      // Format nominal value
       nominalValueStr = UnitConverter.formatValue(
         baseValue,
         widget.currentUnit,
@@ -331,53 +345,54 @@ class _ValueInputPageState extends State<ValueInputPage> {
     }
   }
 
-  // Копирование результатов в буфер обмена с улучшенным форматированием
+  // Copy results to clipboard with improved formatting
   void _copyResultsToClipboard() {
     if (!isWithinInterval || controller.text.isEmpty) {
-      // Нет результатов для копирования
+      // No results to copy
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Нет результатов для копирования'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.t('no_results_to_copy')),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
     }
 
-    // Форматируем значение допуска
+    // Format tolerance value
     String formattedTolerance = displayedToleranceValue;
-    // Проверяем, содержит ли допуск перенос строки (несколько значений)
+    // Check if tolerance contains a line break (multiple values)
     if (displayedToleranceValue.contains('\n')) {
-      // Заменяем перенос строки на слеш для более компактного отображения
+      // Replace line break with slash for more compact display
       formattedTolerance = displayedToleranceValue.replaceAll('\n', ' / ');
     }
 
-    // Форматируем данные для копирования
-    String toleranceInfo = 'Допуск: ${widget.columnName} $formattedTolerance';
-    String intervalInfo = 'Интервал: $currentInterval';
-    String nominalInfo = 'Номинальный размер: $nominalValueStr';
-    String minInfo = 'Минимальный размер: $minValueStr';
-    String maxInfo = 'Максимальный размер: $maxValueStr';
-    String avgInfo = 'Средний размер: $avgValueStr';
+    // Format data for copying
+    String toleranceInfo =
+        '${context.t('search_tolerance')}: ${widget.columnName} $formattedTolerance';
+    String intervalInfo = '${context.t('interval')}: $currentInterval';
+    String nominalInfo = '${context.t('nominal_size_full')}: $nominalValueStr';
+    String minInfo = '${context.t('minimum_size_full')}: $minValueStr';
+    String maxInfo = '${context.t('maximum_size_full')}: $maxValueStr';
+    String avgInfo = '${context.t('average_size_full')}: $avgValueStr';
 
     String clipboardText =
         '$toleranceInfo\n$intervalInfo\n$nominalInfo\n$minInfo\n$maxInfo\n$avgInfo';
 
-    // Копируем в буфер обмена
+    // Copy to clipboard
     Clipboard.setData(ClipboardData(text: clipboardText)).then((_) {
-      // Показываем уведомление об успешном копировании
+      // Show notification about successful copying
       setState(() {
         _justCopied = true;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Результаты скопированы в буфер обмена'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.t('results_copied')),
+          duration: const Duration(seconds: 2),
         ),
       );
 
-      // Сбрасываем состояние копирования через небольшую задержку
+      // Reset copy state after small delay
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
@@ -388,33 +403,41 @@ class _ValueInputPageState extends State<ValueInputPage> {
     });
   }
 
-  // Получение компактной подписи для отображения
+  // Get compact label for display
   String _getShortLabel(String label) {
     switch (label.trim()) {
+      case 'nominal_size_full':
       case 'Номинальный размер':
-        return 'Ном:';
+        return context.t('nom');
+      case 'minimum_size_full':
       case 'Минимальный размер':
-        return 'Мин:';
+        return context.t('min');
+      case 'maximum_size_full':
       case 'Максимальный размер':
-        return 'Макс:';
+        return context.t('max');
+      case 'average_size_full':
       case 'Средний размер':
-        return 'Сред:';
+        return context.t('avg');
       default:
         return label;
     }
   }
 
-  // Получение полной подписи для подсказки
+  // Get full label for tooltip
   String _getFullLabel(String label) {
     switch (label.trim()) {
+      case 'nom':
       case 'Ном:':
-        return 'Номинальный размер';
+        return context.t('nominal_size_full');
+      case 'min':
       case 'Мин:':
-        return 'Минимальный размер';
+        return context.t('minimum_size_full');
+      case 'max':
       case 'Макс:':
-        return 'Максимальный размер';
+        return context.t('maximum_size_full');
+      case 'avg':
       case 'Сред:':
-        return 'Средний размер';
+        return context.t('average_size_full');
       default:
         return label;
     }
@@ -480,7 +503,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
-          // Компактная подпись
+          // Compact label
           Text(
             label,
             style: TextStyle(
@@ -490,7 +513,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
             ),
           ),
           const Spacer(),
-          // Значение
+          // Value
           Text(
             value,
             style: TextStyle(
@@ -505,7 +528,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
     );
   }
 
-  // Создание виджета для отображения информации об интервале
+  // Create widget for displaying interval information
   Widget buildIntervalInfo(
     bool isWithinInterval,
     String interval,
@@ -554,8 +577,11 @@ class _ValueInputPageState extends State<ValueInputPage> {
               children: [
                 Text(
                   isWithinInterval
-                      ? 'В интервале: $interval'
-                      : 'Ошибка! Значение вне допустимого диапазона',
+                      ? context.t(
+                        'in_interval',
+                        args: {'interval_value': interval},
+                      )
+                      : context.t('error_value_outside_range'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: isWithinInterval ? 15 : 16,
@@ -565,7 +591,10 @@ class _ValueInputPageState extends State<ValueInputPage> {
                 if (!isWithinInterval) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Введите значение до $maxValueInTolerance мм',
+                    context.t(
+                      'enter_value_up_to',
+                      args: {'max_value': maxValueInTolerance.toString()},
+                    ),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.red.shade700,
@@ -584,10 +613,12 @@ class _ValueInputPageState extends State<ValueInputPage> {
   @override
   Widget build(BuildContext context) {
     final style = EngineeringTheme.widgetStyle(context);
+    final partTypeTranslated =
+        typeOfPart == 'hole' ? context.t('hole') : context.t('shaft');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Расчет размеров'),
+        title: Text(context.t('calculation_results')),
         elevation: 4,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -596,7 +627,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
       ),
       body: SafeArea(
         child: GestureDetector(
-          // Закрыть клавиатуру при тапе вне поля ввода
+          // Close keyboard when tapping outside input field
           onTap: () => FocusScope.of(context).unfocus(),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -604,25 +635,25 @@ class _ValueInputPageState extends State<ValueInputPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Более компактная шапка с информацией о типе детали и допуске
+                  // More compact header with part type and tolerance info
                   Row(
                     children: [
-                      // Значок детали с соответствующим цветовым оформлением
+                      // Part icon with corresponding color styling
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: (typeOfPart == 'Отверстие'
+                          color: (typeOfPart == 'hole'
                                   ? style.infoColor
                                   : style.errorColor)
                               .withAlpha(20),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          typeOfPart == 'Отверстие'
+                          typeOfPart == 'hole'
                               ? Icons.radio_button_unchecked
                               : Icons.circle,
                           color:
-                              typeOfPart == 'Отверстие'
+                              typeOfPart == 'hole'
                                   ? style.infoColor
                                   : style.errorColor,
                           size: 22,
@@ -630,25 +661,25 @@ class _ValueInputPageState extends State<ValueInputPage> {
                       ),
                       const SizedBox(width: 12),
 
-                      // Информация о допуске и детали
+                      // Tolerance and part info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Обозначение допуска
+                            // Tolerance designation
                             Text(
                               widget.columnName,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color:
-                                    typeOfPart == 'Отверстие'
+                                    typeOfPart == 'hole'
                                         ? style.infoColor
                                         : style.errorColor,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            // Тип детали
+                            // Part type
                             Row(
                               children: [
                                 Container(
@@ -657,26 +688,26 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: (typeOfPart == 'Отверстие'
+                                    color: (typeOfPart == 'hole'
                                             ? style.infoColor
                                             : style.errorColor)
                                         .withAlpha(20),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    typeOfPart,
+                                    partTypeTranslated,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color:
-                                          typeOfPart == 'Отверстие'
+                                          typeOfPart == 'hole'
                                               ? style.infoColor
                                               : style.errorColor,
                                     ),
                                   ),
                                 ),
 
-                                // Показываем текущий интервал, если он уже определен
+                                // Show current interval if already determined
                                 if (controller.text.isNotEmpty &&
                                     isWithinInterval) ...[
                                   const SizedBox(width: 8),
@@ -690,7 +721,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                      'Интервал: $currentInterval',
+                                      '${context.t('interval')}: $currentInterval',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
@@ -709,17 +740,17 @@ class _ValueInputPageState extends State<ValueInputPage> {
 
                   const SizedBox(height: 16),
 
-                  // Поле ввода для базового значения с иконкой и улучшенной подсказкой
+                  // Input field for base value with icon and improved hint
                   TextField(
                     controller: controller,
                     decoration: InputDecoration(
-                      labelText: 'Номинальный размер',
+                      labelText: context.t('nominal_size'),
                       hintText:
                           controller.text.isEmpty
-                              ? 'Введите размер'
+                              ? context.t('enter_size')
                               : isWithinInterval
-                              ? 'Интервал: $currentInterval'
-                              : 'Значение вне допустимого диапазона',
+                              ? '${context.t('interval')}: $currentInterval'
+                              : context.t('error_value_outside_range'),
                       prefixIcon: Icon(
                         Icons.straighten,
                         color:
@@ -731,7 +762,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                       ),
 
                       suffixIcon:
-                          (isWithinInterval&& displayedToleranceValue!='-')
+                          (isWithinInterval && displayedToleranceValue != '-')
                               ? Container(
                                 width: 130,
                                 padding: const EdgeInsets.only(right: 12),
@@ -746,13 +777,13 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontSize: 18,
                                         fontFamily: 'RobotoMono',
                                         color:
-                                            typeOfPart == 'Отверстие'
+                                            typeOfPart == 'hole'
                                                 ? style.infoColor
                                                 : style.errorColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       displayedToleranceValue,
                                       style: TextStyle(
@@ -760,7 +791,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontSize: 18,
                                         fontFamily: 'RobotoMono',
                                         color:
-                                            typeOfPart == 'Отверстие'
+                                            typeOfPart == 'hole'
                                                 ? style.infoColor
                                                 : style.errorColor,
                                       ),
@@ -791,16 +822,16 @@ class _ValueInputPageState extends State<ValueInputPage> {
                     ),
                     onChanged: (value) {
                       setState(() {
-                        // Получаем текущий интервал
+                        // Get current interval
                         String newInterval =
                             value.isEmpty
-                                ? 'Не определено'
+                                ? context.t('interval_not_defined')
                                 : findIntervalForValue(
                                   double.tryParse(value) ?? 0.0,
                                 );
 
-                        // Получаем обновленное значение допуска для этого интервала
-                        if (newInterval != 'Не определено' &&
+                        // Get updated tolerance value for this interval
+                        if (newInterval != context.t('interval_not_defined') &&
                             newInterval != 'Ошибка') {
                           displayedToleranceValue =
                               getUpdatedToleranceForInterval(
@@ -811,7 +842,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                           displayedToleranceValue = widget.toleranceValue;
                         }
 
-                        // Рассчитываем значения с обновленным допуском
+                        // Calculate values with updated tolerance
                         calculateValues(value);
                       });
                     },
@@ -819,11 +850,11 @@ class _ValueInputPageState extends State<ValueInputPage> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily:
-                          'RobotoMono', // Используем моноширинный шрифт для численного ввода
+                          'RobotoMono', // Use monospace font for numerical input
                     ),
                   ),
 
-                  // Показываем ошибку только если значение вне интервала и поле не пустое
+                  // Show error only if value is outside interval and field is not empty
                   if (controller.text.isNotEmpty && !isWithinInterval)
                     Padding(
                       padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -837,7 +868,12 @@ class _ValueInputPageState extends State<ValueInputPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Введите значение до $maxValueInTolerance мм',
+                              context.t(
+                                'enter_value_up_to',
+                                args: {
+                                  'max_value': maxValueInTolerance.toString(),
+                                },
+                              ),
                               style: const TextStyle(
                                 color: Colors.red,
                                 fontSize: 13,
@@ -849,11 +885,11 @@ class _ValueInputPageState extends State<ValueInputPage> {
                       ),
                     ),
 
-                  // Показываем результаты в компактном виде с улучшенным оформлением
+                  // Show results in compact form with improved styling
                   if (controller.text.isNotEmpty && isWithinInterval) ...[
                     const SizedBox(height: 20),
 
-                    // Заголовок результатов
+                    // Results header
                     Row(
                       children: [
                         Icon(
@@ -862,17 +898,17 @@ class _ValueInputPageState extends State<ValueInputPage> {
                           color: style.infoColor,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Результаты расчета',
-                          style: TextStyle(
+                        Text(
+                          context.t('calculation_results'),
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
                         const Spacer(),
-                        // Кнопка копирования результатов
+                        // Copy results button
                         Tooltip(
-                          message: 'Скопировать результаты',
+                          message: context.t('copy_results'),
                           child: InkWell(
                             onTap: _copyResultsToClipboard,
                             borderRadius: BorderRadius.circular(20),
@@ -903,7 +939,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
 
                     const SizedBox(height: 12),
 
-                    // Карточка с результатами - более компактное отображение
+                    // Results card - more compact display
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -920,22 +956,22 @@ class _ValueInputPageState extends State<ValueInputPage> {
                       ),
                       child: Column(
                         children: [
-                          // Размеры в две колонки для экономии места
+                          // Dimensions in two columns to save space
                           Row(
                             children: [
-                              // Левая колонка
+                              // Left column
                               Expanded(
                                 child: Column(
                                   children: [
                                     _buildCompactValueTile(
-                                      'Ном:',
+                                      context.t('nom'),
                                       nominalValueStr,
                                       Icons.crop_free,
                                       style.nominalValueColor,
                                     ),
                                     const SizedBox(height: 8),
                                     _buildCompactValueTile(
-                                      'Сред:',
+                                      context.t('avg'),
                                       avgValueStr,
                                       Icons.sync_alt,
                                       style.avgValueColor,
@@ -943,7 +979,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                   ],
                                 ),
                               ),
-                              // Вертикальный разделитель
+                              // Vertical divider
                               Container(
                                 height: 70,
                                 width: 1,
@@ -952,19 +988,19 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                   horizontal: 8,
                                 ),
                               ),
-                              // Правая колонка
+                              // Right column
                               Expanded(
                                 child: Column(
                                   children: [
                                     _buildCompactValueTile(
-                                      'Мин:',
+                                      context.t('min'),
                                       minValueStr,
                                       Icons.arrow_downward,
                                       style.minValueColor,
                                     ),
                                     const SizedBox(height: 8),
                                     _buildCompactValueTile(
-                                      'Макс:',
+                                      context.t('max'),
                                       maxValueStr,
                                       Icons.arrow_upward,
                                       style.maxValueColor,
@@ -981,13 +1017,16 @@ class _ValueInputPageState extends State<ValueInputPage> {
 
                   const SizedBox(height: 24),
 
-                  // Кнопка завершения расчета
+                  // Completion button
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
                     icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Готово', style: TextStyle(fontSize: 16)),
+                    label: Text(
+                      context.t('done'),
+                      style: const TextStyle(fontSize: 16),
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -1005,7 +1044,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
   }
 }
 
-// Функция для перехода на страницу ввода значения и расчета
+// Function to navigate to value input page and calculation
 void navigateToValueInputPage({
   required BuildContext context,
   required String columnName,

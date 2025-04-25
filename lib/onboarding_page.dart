@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'engineering_theme.dart';
+import 'core/localization/app_localizations.dart';
 
 class OnboardingPage extends StatefulWidget {
   final VoidCallback onComplete;
@@ -19,39 +20,59 @@ class _OnboardingPageState extends State<OnboardingPage> {
   // Current page index
   int _currentPage = 0;
   
-  // Onboarding steps content
-  final List<OnboardingStep> _steps = [
-    OnboardingStep(
-      title: 'Добро пожаловать в справочник по допускам',
-      description: 'Приложение поможет рассчитать размеры с учетом допусков. Пролистайте вправо, чтобы ознакомиться с основными функциями.',
-      icon: Icons.precision_manufacturing,
-      imageAsset: null,
-    ),
-    OnboardingStep(
-      title: 'Поиск допусков',
-      description: 'Нажмите на кнопку поиска, чтобы быстро найти необходимый допуск. Вы можете фильтровать по отверстиям и валам.',
-      icon: Icons.search,
-      imageAsset: null,
-    ),
-    OnboardingStep(
-      title: 'Расчет размеров',
-      description: 'Выберите ячейку с допуском и введите номинальный размер для получения минимальных и максимальных значений.',
-      icon: Icons.straighten,
-      imageAsset: null,
-    ),
-    OnboardingStep(
-      title: 'Переключение единиц',
-      description: 'Вы можете переключаться между миллиметрами, дюймами и микронами через меню настроек в правом верхнем углу.',
-      icon: Icons.swap_horiz,
-      imageAsset: null,
-    ),
-    OnboardingStep(
-      title: 'Темная тема',
-      description: 'Для комфортной работы в условиях плохого освещения включите темную тему через меню настроек.',
-      icon: Icons.dark_mode,
-      imageAsset: null,
-    ),
-  ];
+  // Onboarding steps content - will be populated in initState
+  late List<OnboardingStep> _steps;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set proper style for status bar
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // For light theme
+        statusBarBrightness: Brightness.light, // For iOS
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize steps with translations after context is available
+    _steps = [
+      OnboardingStep(
+        title: context.t('welcome_title'),
+        description: context.t('welcome_description'),
+        icon: Icons.precision_manufacturing,
+        imageAsset: null,
+      ),
+      OnboardingStep(
+        title: context.t('search_title'),
+        description: context.t('search_description'),
+        icon: Icons.search,
+        imageAsset: null,
+      ),
+      OnboardingStep(
+        title: context.t('calculation_title'),
+        description: context.t('calculation_description'),
+        icon: Icons.straighten,
+        imageAsset: null,
+      ),
+      OnboardingStep(
+        title: context.t('units_switching_title'),
+        description: context.t('units_switching_description'),
+        icon: Icons.swap_horiz,
+        imageAsset: null,
+      ),
+      OnboardingStep(
+        title: context.t('dark_theme_title'),
+        description: context.t('dark_theme_description'),
+        icon: Icons.dark_mode,
+        imageAsset: null,
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -68,18 +89,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     // Add haptic feedback on page change
     HapticFeedback.lightImpact();
   }
-    @override
-  void initState() {
-    super.initState();
-    // Установить правильный стиль для статус-бара
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // Для светлой темы
-        statusBarBrightness: Brightness.light, // Для iOS
-      ),
-    );
-  }
+  
   // Move to next page or complete onboarding
   void _nextPage() {
     if (_currentPage < _steps.length - 1) {
@@ -104,23 +114,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final brightness = Theme.of(context).brightness;
     final bool isDark = brightness == Brightness.dark;
     
-    // Обновляем стиль статус-бара в зависимости от темы
+    // Update status bar style based on theme
     if (isDark) {
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light, // Для темной темы
-          statusBarBrightness: Brightness.dark, // Для iOS
+          statusBarIconBrightness: Brightness.light, // For dark theme
+          statusBarBrightness: Brightness.dark, // For iOS
         ),
       );
     }
     
     return Scaffold(
-      // Добавить AppBar для лучшего контроля над статус-баром
+      // Add AppBar for better control over status bar
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 0, // Невидимый AppBar только для контроля статус-бара
+        toolbarHeight: 0, // Invisible AppBar only for status bar control
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
@@ -135,7 +145,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: TextButton(
                   onPressed: _skipOnboarding,
-                  child: const Text('ПРОПУСТИТЬ'),
+                  child: Text(context.t('skip')),
                 ),
               ),
             ),
@@ -242,7 +252,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                     child: Text(
-                      _currentPage == _steps.length - 1 ? 'НАЧАТЬ' : 'ДАЛЕЕ',
+                      _currentPage == _steps.length - 1 ? context.t('start') : context.t('next'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

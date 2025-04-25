@@ -2,6 +2,7 @@
 // Contains the page widget and its logic with engineering design system
 
 import 'package:flutter/material.dart';
+import 'package:tolerance/core/localization/app_localizations.dart';
 
 import 'package:tolerance/engineering_theme.dart';
 
@@ -11,6 +12,7 @@ import 'package:tolerance/tolerance_search_page.dart';
 import 'package:tolerance/value_input_page.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tolerance/widgets/language_selector.dart';
 // Import our custom theme
 // import 'engineering_theme.dart';
 // import other required files
@@ -23,8 +25,14 @@ const String _keyScrollPositionY = 'scrollPositionY';
 class ToleranceTablePage extends StatefulWidget {
   // Function to change theme for the entire app
   final Function(ThemeMode) setThemeMode;
+  // Function to change locale for the entire app
+  final Function(Locale) setLocale;
 
-  const ToleranceTablePage({super.key, required this.setThemeMode});
+  const ToleranceTablePage({
+    super.key, 
+    required this.setThemeMode,
+    required this.setLocale,
+  });
 
   @override
   State<ToleranceTablePage> createState() => _ToleranceTablePageState();
@@ -54,7 +62,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
   // Show tooltips for unit system changes
   bool _showTooltip = false;
   
-  // Переменная для отслеживания видимости AppBar
+  // Variable to track AppBar visibility
   bool _isAppBarVisible = true;
   
   @override
@@ -66,7 +74,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     // Load saved scroll position
     _loadScrollPosition();
     
-    // Добавляем слушатель для скрытия/показа AppBar при скролле
+    // Add listener for hiding/showing AppBar on scroll
     _verticalScrollController.addListener(_handleScroll);
     
     // Add listeners to save scroll position on scroll
@@ -77,23 +85,22 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     _checkFirstLaunch();
   }
   
-
-void _handleScroll() {
-  if (_verticalScrollController.hasClients) {
-    final offset = _verticalScrollController.offset;
-    // Скрываем AppBar при малейшем скролле вниз (offset > 0)
-    // и показываем только когда пользователь в самом верху (offset = 0)
-    if (offset > 0 && _isAppBarVisible) {
-      setState(() {
-        _isAppBarVisible = false;
-      });
-    } else if (offset <= 0 && !_isAppBarVisible) {
-      setState(() {
-        _isAppBarVisible = true;
-      });
+  void _handleScroll() {
+    if (_verticalScrollController.hasClients) {
+      final offset = _verticalScrollController.offset;
+      // Hide AppBar on the slightest scroll down (offset > 0)
+      // and show only when user is at the very top (offset = 0)
+      if (offset > 0 && _isAppBarVisible) {
+        setState(() {
+          _isAppBarVisible = false;
+        });
+      } else if (offset <= 0 && !_isAppBarVisible) {
+        setState(() {
+          _isAppBarVisible = true;
+        });
+      }
     }
   }
-}
   
   // Check if this is the first launch to show tooltip
   Future<void> _checkFirstLaunch() async {
@@ -211,7 +218,7 @@ void _handleScroll() {
 
   // Method to cycle through unit systems with feedback
   void _changeUnitSystem() {
-    // Запоминаем предыдущую единицу измерения
+    // Remember previous unit
     final UnitSystem oldUnit = _currentUnit;
     
     setState(() {
@@ -231,11 +238,14 @@ void _handleScroll() {
       _toleranceDataSource = ToleranceDataSource(unitSystem: _currentUnit);
     });
     
-    // Показываем пользователю сообщение о смене единиц измерения
+    // Show user message about unit change
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Единицы измерения изменены: ${oldUnit.symbol} → ${_currentUnit.symbol}',
+          context.t('units_changed', args: {
+            'old_units': oldUnit.symbol,
+            'new_units': _currentUnit.symbol,
+          }),
           style: const TextStyle(fontSize: 14),
         ),
         duration: const Duration(seconds: 2),
@@ -253,17 +263,16 @@ void _handleScroll() {
     final currentBrightness = Theme.of(context).brightness;
     _isDarkMode = currentBrightness == Brightness.dark;
 
-  return Scaffold(
-    // Используем пустой AppBar с нулевой высотой вместо null,
-    // чтобы сохранить цвет StatusBar при скрытии основного AppBar
-    appBar: _isAppBarVisible 
-      ? _buildStandardAppBar() 
-      : AppBar(
-          toolbarHeight: 0,
-          elevation: 0,
-
-          automaticallyImplyLeading: false,
-        ),
+    return Scaffold(
+      // Use empty AppBar with zero height instead of null,
+      // to retain StatusBar color when hiding the main AppBar
+      appBar: _isAppBarVisible 
+        ? _buildStandardAppBar() 
+        : AppBar(
+            toolbarHeight: 0,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+          ),
       body: NotificationListener<ScrollNotification>(
         // Add scroll handler to save position
         onNotification: (ScrollNotification scrollInfo) {
@@ -297,17 +306,17 @@ void _handleScroll() {
     );
   }
   
-  // Новый метод для построения стандартного AppBar
+  // New method for building standard AppBar
   AppBar _buildStandardAppBar() {
     return AppBar(
       title: Row(
         children: [
-          const Text('Допуски'),
+          Text(context.t('tolerances')),
           if (_currentUnit == UnitSystem.millimeters)
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
               child: Tooltip(
-                message: 'Ячейки кликабельны в режиме мм',
+                message: context.t('cells_clickable_tip'),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
@@ -327,9 +336,9 @@ void _handleScroll() {
                         color: EngineeringTheme.successColor,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Кликабельно',
-                        style: TextStyle(
+                      Text(
+                        context.t('clickable'),
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -342,6 +351,10 @@ void _handleScroll() {
         ],
       ),
       actions: [
+        // Language selector
+        LanguageSelector(
+          onLocaleChanged: widget.setLocale,
+        ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (value) {
@@ -361,38 +374,38 @@ void _handleScroll() {
             }
           },
           itemBuilder: (BuildContext context) => [
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'search',
               child: ListTile(
-                leading: Icon(Icons.search),
-                title: Text('Поиск допуска'),
+                leading: const Icon(Icons.search),
+                title: Text(context.t('search_tolerance')),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            // Добавляем пункт меню для переключения единиц измерения
+            // Add menu item for switching units
             PopupMenuItem<String>(
               value: 'units',
               child: ListTile(
                 leading: const Icon(Icons.straighten),
-                title: Text('Единицы: ${_currentUnit.symbol}'),
-                subtitle: Text('Нажмите для смены единиц измерения'),
+                title: Text(context.t('units_with_value', args: {'units_value': _currentUnit.symbol})),
+                subtitle: Text(context.t('tap_to_change_units')),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            // Добавляем пункт меню для переключения темы
+            // Add menu item for switching theme
             PopupMenuItem<String>(
               value: 'theme',
               child: ListTile(
                 leading: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-                title: Text(_isDarkMode ? 'Светлая тема' : 'Темная тема'),
+                title: Text(_isDarkMode ? context.t('light_theme') : context.t('dark_theme')),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'about',
               child: ListTile(
-                leading: Icon(Icons.info_outline),
-                title: Text('О программе'),
+                leading: const Icon(Icons.info_outline),
+                title: Text(context.t('about')),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
@@ -444,9 +457,9 @@ void _handleScroll() {
                     color: EngineeringTheme.infoColor,
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Подсказка',
-                    style: TextStyle(
+                Text(
+                  context.t('tip'),
+                  style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -454,10 +467,10 @@ void _handleScroll() {
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Нажмите на ячейку с допуском, чтобы рассчитать размеры.',
-                style: TextStyle(fontSize: 14),
-              ),
+            Text(
+                 context.t('cells_clickable_tip'),
+              style: const TextStyle(fontSize: 14),
+            ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -467,11 +480,11 @@ void _handleScroll() {
                     color: EngineeringTheme.primaryBlue,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Настройки темы и единиц измерения находятся в меню',
-                      style: TextStyle(fontSize: 14),
-                    ),
+                Expanded(
+                  child: Text(
+                    context.t('theme_units_tip'),
+                    style: const TextStyle(fontSize: 14),
+                  ),
                   ),
                 ],
               ),
@@ -483,8 +496,8 @@ void _handleScroll() {
                     setState(() {
                       _showTooltip = false;
                     });
-                  },
-                  child: const Text('ПОНЯТНО'),
+                },
+                child: Text(context.t('got_it')),
                 ),
               ),
             ],
@@ -500,40 +513,40 @@ void _handleScroll() {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'О программе',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.t('about_title'),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-              Divider(height: 24),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Справочник допусков и посадок',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            const Divider(height: 24),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.t('tolerance_reference'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Приложение для расчета размеров с учетом допусков.',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Версия: 1.3.0',
-                style: TextStyle(fontSize: 14),
-              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.t('app_description'),
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.t('version', args: {'version_number': '1.3.0'}),
+              style: const TextStyle(fontSize: 14),
+            ),
              
               
             ],
@@ -541,9 +554,9 @@ void _handleScroll() {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('ЗАКРЫТЬ'),
+              Navigator.of(context).pop();
+            },
+            child: Text(context.t('close')),
             ),
           ],
         );
@@ -660,12 +673,14 @@ void _showSearchDialog() async {
       // Show message if user taps in other unit modes
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Расчет размеров доступен только в режиме миллиметров (мм)',
+          content:  Text(
+            context.t(
+            'calculation_only_in_mm'),
             style: TextStyle(fontSize: 14),
           ),
           action: SnackBarAction(
-            label: 'ПЕРЕКЛЮЧИТЬ',
+            label:   context.t(
+            'switch'),
             onPressed: () {
               setState(() {
                 _currentUnit = UnitSystem.millimeters;
@@ -747,7 +762,7 @@ void _showSearchDialog() async {
             padding: const EdgeInsets.all(8.0),
             child: Text(
               columnName == "Interval" 
-                ? 'Интервал\n(мм)'  // Intervals always in mm
+                ? context.t('interval_mm')  // Intervals always in mm
                 : columnName,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
