@@ -67,7 +67,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
 
   // Переменная для отображаемого значения допуска
   String displayedToleranceValue = '';
-  
+
   // Переменная для отслеживания состояния копирования
   bool _justCopied = false;
 
@@ -331,61 +331,62 @@ class _ValueInputPageState extends State<ValueInputPage> {
     }
   }
 
-// Копирование результатов в буфер обмена с улучшенным форматированием
-void _copyResultsToClipboard() {
-  if (!isWithinInterval || controller.text.isEmpty) {
-    // Нет результатов для копирования
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Нет результатов для копирования'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    return;
-  }
+  // Копирование результатов в буфер обмена с улучшенным форматированием
+  void _copyResultsToClipboard() {
+    if (!isWithinInterval || controller.text.isEmpty) {
+      // Нет результатов для копирования
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Нет результатов для копирования'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
-  // Форматируем значение допуска
-  String formattedTolerance = displayedToleranceValue;
-  // Проверяем, содержит ли допуск перенос строки (несколько значений)
-  if (displayedToleranceValue.contains('\n')) {
-    // Заменяем перенос строки на слеш для более компактного отображения
-    formattedTolerance = displayedToleranceValue.replaceAll('\n', ' / ');
-  }
+    // Форматируем значение допуска
+    String formattedTolerance = displayedToleranceValue;
+    // Проверяем, содержит ли допуск перенос строки (несколько значений)
+    if (displayedToleranceValue.contains('\n')) {
+      // Заменяем перенос строки на слеш для более компактного отображения
+      formattedTolerance = displayedToleranceValue.replaceAll('\n', ' / ');
+    }
 
-  // Форматируем данные для копирования
-  String toleranceInfo = 'Допуск: ${widget.columnName} $formattedTolerance';
-  String intervalInfo = 'Интервал: $currentInterval';
-  String nominalInfo = 'Номинальный размер: $nominalValueStr';
-  String minInfo = 'Минимальный размер: $minValueStr';
-  String maxInfo = 'Максимальный размер: $maxValueStr';
-  String avgInfo = 'Средний размер: $avgValueStr';
-  
-  String clipboardText = '$toleranceInfo\n$intervalInfo\n$nominalInfo\n$minInfo\n$maxInfo\n$avgInfo';
-  
-  // Копируем в буфер обмена
-  Clipboard.setData(ClipboardData(text: clipboardText)).then((_) {
-    // Показываем уведомление об успешном копировании
-    setState(() {
-      _justCopied = true;
+    // Форматируем данные для копирования
+    String toleranceInfo = 'Допуск: ${widget.columnName} $formattedTolerance';
+    String intervalInfo = 'Интервал: $currentInterval';
+    String nominalInfo = 'Номинальный размер: $nominalValueStr';
+    String minInfo = 'Минимальный размер: $minValueStr';
+    String maxInfo = 'Максимальный размер: $maxValueStr';
+    String avgInfo = 'Средний размер: $avgValueStr';
+
+    String clipboardText =
+        '$toleranceInfo\n$intervalInfo\n$nominalInfo\n$minInfo\n$maxInfo\n$avgInfo';
+
+    // Копируем в буфер обмена
+    Clipboard.setData(ClipboardData(text: clipboardText)).then((_) {
+      // Показываем уведомление об успешном копировании
+      setState(() {
+        _justCopied = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Результаты скопированы в буфер обмена'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Сбрасываем состояние копирования через небольшую задержку
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _justCopied = false;
+          });
+        }
+      });
     });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Результаты скопированы в буфер обмена'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    
-    // Сбрасываем состояние копирования через небольшую задержку
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _justCopied = false;
-        });
-      }
-    });
-  });
-}
+  }
 
   // Получение компактной подписи для отображения
   String _getShortLabel(String label) {
@@ -731,16 +732,22 @@ void _copyResultsToClipboard() {
 
                       suffixIcon:
                           (isWithinInterval)
-                              ? Text(
-                                '$displayedToleranceValue   ',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  fontFamily: 'RobotoMono',
-                                  color:
-                                      typeOfPart == 'Отверстие'
-                                          ? style.infoColor
-                                          : style.errorColor,
+                              ? Container(
+                                width: 130,
+                                padding: const EdgeInsets.only(right: 12),
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  displayedToleranceValue,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    fontFamily: 'RobotoMono',
+                                    color:
+                                        typeOfPart == 'Отверстие'
+                                            ? style.infoColor
+                                            : style.errorColor,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               )
                               : null,
@@ -843,7 +850,7 @@ void _copyResultsToClipboard() {
                             fontSize: 16,
                           ),
                         ),
-                         const Spacer(),
+                        const Spacer(),
                         // Кнопка копирования результатов
                         Tooltip(
                           message: 'Скопировать результаты',
@@ -853,20 +860,25 @@ void _copyResultsToClipboard() {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: _justCopied 
-                                  ? EngineeringTheme.successColor.withAlpha(30)
-                                  : EngineeringTheme.primaryBlue.withAlpha(20),
+                                color:
+                                    _justCopied
+                                        ? EngineeringTheme.successColor
+                                            .withAlpha(30)
+                                        : EngineeringTheme.primaryBlue
+                                            .withAlpha(20),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Icon(
                                 _justCopied ? Icons.check : Icons.content_copy,
                                 size: 20,
-                                color: _justCopied 
-                                  ? EngineeringTheme.successColor
-                                  : EngineeringTheme.primaryBlue,
+                                color:
+                                    _justCopied
+                                        ? EngineeringTheme.successColor
+                                        : EngineeringTheme.primaryBlue,
                               ),
                             ),
-                          ), )
+                          ),
+                        ),
                       ],
                     ),
 
@@ -908,8 +920,7 @@ void _copyResultsToClipboard() {
                                       avgValueStr,
                                       Icons.sync_alt,
                                       style.avgValueColor,
-                                    )
-                                    ,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -939,7 +950,6 @@ void _copyResultsToClipboard() {
                                       Icons.arrow_upward,
                                       style.maxValueColor,
                                     ),
-                                    
                                   ],
                                 ),
                               ),

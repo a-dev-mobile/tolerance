@@ -78,7 +78,7 @@ class _MachineryToleranceAppState extends State<MachineryToleranceApp> {
       // Load onboarding status
       final bool? onboardingComplete = prefs.getBool(_prefOnboardingComplete);
       // Искусственная задержка для проверки сплэш-экрана - 3 секунды
-      await Future.delayed(const Duration(seconds: 3));
+       await Future.delayed(const Duration(seconds: 1));
       // Update state with all loaded preferences
       setState(() {
         _themeMode = loadedThemeMode;
@@ -140,7 +140,7 @@ class _MachineryToleranceAppState extends State<MachineryToleranceApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Допуски и посадки',
+      title: 'Допуски',
       // Use our custom light theme
       theme: EngineeringTheme.lightTheme(),
       // Use our custom dark theme

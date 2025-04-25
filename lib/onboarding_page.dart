@@ -22,8 +22,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   // Onboarding steps content
   final List<OnboardingStep> _steps = [
     OnboardingStep(
-      title: 'Добро пожаловать в справочник',
-      description: 'Приложение поможет рассчитать размеры деталей с учетом допусков. Пролистайте вправо, чтобы ознакомиться с основными функциями.',
+      title: 'Добро пожаловать в справочник по допускам',
+      description: 'Приложение поможет рассчитать размеры с учетом допусков. Пролистайте вправо, чтобы ознакомиться с основными функциями.',
       icon: Icons.precision_manufacturing,
       imageAsset: null,
     ),
@@ -35,7 +35,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ),
     OnboardingStep(
       title: 'Расчет размеров',
-      description: 'Выберите ячейку с допуском и введите номинальный размер для получения минимальных и максимальных значений. Расчет доступен только в режиме миллиметров.',
+      description: 'Выберите ячейку с допуском и введите номинальный размер для получения минимальных и максимальных значений.',
       icon: Icons.straighten,
       imageAsset: null,
     ),

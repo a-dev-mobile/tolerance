@@ -5,6 +5,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+
 android {
     namespace = "a.dev.mobile_tolerance"
     compileSdk = flutter.compileSdkVersion
@@ -20,7 +21,6 @@ android {
     }
 
     defaultConfig {
-
         applicationId = "a.dev.mobile_tolerance"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

@@ -302,7 +302,7 @@ void _handleScroll() {
     return AppBar(
       title: Row(
         children: [
-          const Text('Допуски и посадки'),
+          const Text('Допуски'),
           if (_currentUnit == UnitSystem.millimeters)
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
@@ -526,7 +526,7 @@ void _handleScroll() {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Приложение для расчета размеров деталей с учетом допусков.',
+                'Приложение для расчета размеров с учетом допусков.',
                 style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 8),
@@ -534,24 +534,8 @@ void _handleScroll() {
                 'Версия: 1.3.0',
                 style: TextStyle(fontSize: 14),
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Icon(
-                    Icons.precision_manufacturing,
-                    color: EngineeringTheme.primaryBlue,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Для инженеров-машиностроителей',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+             
+              
             ],
           ),
           actions: [
@@ -660,13 +644,13 @@ void _showSearchDialog() async {
       }
       
       // Clear highlight after 3 seconds
-      // Future.delayed(const Duration(seconds: 3), () {
-      //   if (mounted) {
-      //     setState(() {
-      //       _highlightedColumn = null;
-      //     });
-      //   }
-      // });
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            // _highlightedColumn = null;
+          });
+        }
+      });
     });
   }
   
