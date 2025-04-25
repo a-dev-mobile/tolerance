@@ -226,8 +226,38 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: const Text('Все допуски'),
+                  label: Text(
+                    'Все допуски',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      // Use white text when selected for better contrast, otherwise use primary color
+                      color:
+                          activeCategory == 'all'
+                              ? Colors.white
+                              : EngineeringTheme.primaryBlue,
+                      fontSize: 14,
+                    ),
+                  ),
                   selected: activeCategory == 'all',
+                  // Enhanced colors for the active state
+                  selectedColor: EngineeringTheme.primaryBlue,
+                  checkmarkColor: Colors.white,
+                  // Improved background and border when not selected
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
+                  side: BorderSide(
+                    color:
+                        activeCategory == 'all'
+                            ? EngineeringTheme.primaryBlue
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400,
+                    width: 1.5,
+                  ),
+                  elevation: activeCategory == 'all' ? 2 : 0,
+                  shadowColor: EngineeringTheme.primaryBlue.withAlpha(100),
                   onSelected: (selected) {
                     setState(() {
                       activeCategory = 'all';
@@ -235,9 +265,13 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
                       _filterTolerances(controller.text);
                     });
                   },
-                  avatar: const Icon(Icons.list),
-                ),
-              ),
+  avatar:  activeCategory != 'all' ? Icon(
+            Icons.list,
+            color: activeCategory == 'all' ? Colors.white : EngineeringTheme.primaryBlue,
+            size: 18,
+          ):null,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        ),    ),
 
               // Holes
               Padding(
