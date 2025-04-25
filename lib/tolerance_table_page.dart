@@ -553,7 +553,6 @@ void _handleScroll() {
   
   // Method to toggle theme with feedback
   void _toggleTheme() {
-    final bool oldIsDarkMode = _isDarkMode;
     
     setState(() {
       _isDarkMode = !_isDarkMode;
@@ -759,7 +758,7 @@ void _showSearchDialog() async {
               textAlign: TextAlign.center,
             ),
           ),
-          width: columnName == "Interval" ? 120 : 90, // Column width
+          width: columnName == "Interval" ? 85 : 90, // Column width
         ),
       );
     }

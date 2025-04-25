@@ -731,23 +731,42 @@ class _ValueInputPageState extends State<ValueInputPage> {
                       ),
 
                       suffixIcon:
-                          (isWithinInterval)
+                          (isWithinInterval&& displayedToleranceValue!='-')
                               ? Container(
                                 width: 130,
                                 padding: const EdgeInsets.only(right: 12),
                                 alignment: Alignment.centerRight,
-                                child: Text(
-                                  displayedToleranceValue,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    fontFamily: 'RobotoMono',
-                                    color:
-                                        typeOfPart == 'Отверстие'
-                                            ? style.infoColor
-                                            : style.errorColor,
-                                  ),
-                                  textAlign: TextAlign.center,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      widget.columnName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        fontFamily: 'RobotoMono',
+                                        color:
+                                            typeOfPart == 'Отверстие'
+                                                ? style.infoColor
+                                                : style.errorColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      displayedToleranceValue,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        fontFamily: 'RobotoMono',
+                                        color:
+                                            typeOfPart == 'Отверстие'
+                                                ? style.infoColor
+                                                : style.errorColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
                                 ),
                               )
                               : null,
