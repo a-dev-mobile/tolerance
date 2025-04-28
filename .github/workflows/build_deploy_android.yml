@@ -73,10 +73,19 @@ jobs:
       - name: Get commit info
         id: commit-info
         run: |
-          echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
-          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "date=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+          # capture raw values in shell variables
+          commit_message="$(git log -1 --pretty=%B)"
+          sha="$(git rev-parse --short HEAD)"
+          date="$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')"
 
+          # for multiline / “unsafe” values, use the <<EOF syntax
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$commit_message"   >> "$GITHUB_OUTPUT"
+          echo "EOF"               >> "$GITHUB_OUTPUT"
+
+          # for safe, single-line values you can still do the simple form
+          echo "sha=$sha"          >> "$GITHUB_OUTPUT"
+          echo "date=$date"        >> "$GITHUB_OUTPUT"
       # Загрузка APK артефакта
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
