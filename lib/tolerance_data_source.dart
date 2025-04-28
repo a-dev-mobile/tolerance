@@ -4,6 +4,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:tolerance/core/models/tolerance_filter.dart';
 import 'package:tolerance/core/utils/unit_converter.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:tolerance/core/constants/tolerance_constants.dart';
@@ -14,8 +15,12 @@ class ToleranceDataSource extends DataGridSource {
   late List<DataGridRow> _rows;
   late List<String> _columnNames;
   final UnitSystem unitSystem; // Система единиц измерения
+    final ToleranceFilter? toleranceFilter; 
 
-  ToleranceDataSource({required this.unitSystem}) {
+  ToleranceDataSource({
+    required this.unitSystem,
+    this.toleranceFilter,
+  }) {
     _initDataGridRows();
   }
 
@@ -29,7 +34,10 @@ void _initDataGridRows() {
   ToleranceConstants.toleranceValues.forEach((interval, values) {
     // Для каждого интервала перебираем ключи (допуски) в порядке их объявления
     values.keys.forEach((key) {
-      uniqueColumnNames.add(key);
+      // Only add columns that pass the filter or if no filter is set
+      if (key == "Interval" || toleranceFilter == null || toleranceFilter!.isVisible(key)) {
+        uniqueColumnNames.add(key);
+      }
     });
   });
 
@@ -65,14 +73,16 @@ void _initDataGridRows() {
     });
   }
 
-  // Заполняет набор всех имен колонок
-  void getAllColumnNames(Set<String> uniqueColumnNames) {
-    ToleranceConstants.toleranceValues.forEach((interval, values) {
-      for (var key in values.keys) {
+// Modify the getAllColumnNames method to filter the columns:
+void getAllColumnNames(Set<String> uniqueColumnNames) {
+  ToleranceConstants.toleranceValues.forEach((interval, values) {
+    for (var key in values.keys) {
+      // Only add columns that pass the filter or if no filter is set
+      if (key == "Interval" || toleranceFilter == null || toleranceFilter!.isVisible(key)) {
         uniqueColumnNames.add(key);
       }
-    });
-  }
+    }
+  });}
   
   // Получает индекс колонки по её имени
   int getColumnIndex(String columnName) {

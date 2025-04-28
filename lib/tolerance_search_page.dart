@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tolerance/core/models/tolerance_filter.dart';
 import 'engineering_theme.dart';
 import 'core/localization/app_localizations.dart'; // Add this
 
@@ -50,12 +51,12 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
   List<String> holeTolerances = [];
   List<String> shaftTolerances = [];
   List<String> recentTolerances = [];
-
+late ToleranceFilter _toleranceFilter;
   // State variables
   bool isLoading = true;
   bool showRecent = true;
   String activeCategory = 'all'; // 'all', 'holes', 'shafts'
-
+bool _filterActive = false; 
   @override
   void initState() {
     super.initState();
@@ -64,8 +65,31 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
 
     // Load search history and organize tolerances
     _initializeData();
+      // Load tolerance filter
+  _loadToleranceFilter();
   }
 
+// 3. Добавить метод для загрузки фильтра:
+Future<void> _loadToleranceFilter() async {
+  try {
+    _toleranceFilter = await ToleranceFilter.load();
+    
+    // Проверяем, активен ли фильтр (если хотя бы один допуск не выбран)
+    bool anyHoleHidden = _toleranceFilter.holeLetters.values.any((value) => !value);
+    bool anyShaftHidden = _toleranceFilter.shaftLetters.values.any((value) => !value);
+    
+    setState(() {
+      _filterActive = anyHoleHidden || anyShaftHidden;
+    });
+  } catch (e) {
+    debugPrint('Error loading tolerance filter: $e');
+    // Используем значения по умолчанию, если загрузка не удалась
+    _toleranceFilter = ToleranceFilter.defaults();
+    setState(() {
+      _filterActive = false;
+    });
+  }
+}
   // Load data and organize tolerances
   Future<void> _initializeData() async {
     setState(() {
@@ -196,22 +220,45 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
     return Column(
       children: [
         // Search Field
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: context.t('search_tolerance'),
-            hintText: context.t('enter_designation'),
-            prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+  TextField(
+    controller: controller,
+    decoration: InputDecoration(
+      labelText: context.t('search_tolerance'),
+      hintText: context.t('enter_designation'),
+      prefixIcon: const Icon(Icons.search),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
+    ),
+    onChanged: _filterTolerances,
+    // autofocus: true,
+  ),
+  if (_filterActive)
+    Padding(
+      padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+      child: Row(
+        children: [
+          Icon(
+            Icons.filter_list,
+            size: 14,
+            color: Colors.grey.shade600,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            context.t('filter_active_notice'),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic,
             ),
           ),
-          onChanged: _filterTolerances,
-          // autofocus: true,
-        ),
-        const SizedBox(height: 16),
+        ],
+      ),
+    ),
+  
+  const SizedBox(height: 16),
 
         // Filter Chips for category selection
         SingleChildScrollView(

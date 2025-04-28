@@ -5,11 +5,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tolerance/core/localization/app_localizations.dart';
+import 'package:tolerance/core/models/tolerance_filter.dart';
 
 import 'package:tolerance/engineering_theme.dart';
 
 import 'package:tolerance/tolerance_data_source.dart';
 import 'package:tolerance/core/models/unit_system.dart';
+import 'package:tolerance/tolerance_filter_page.dart';
 import 'package:tolerance/tolerance_search_page.dart';
 import 'package:tolerance/value_input_page.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
@@ -44,7 +46,8 @@ class ToleranceTablePage extends StatefulWidget {
 class _ToleranceTablePageState extends State<ToleranceTablePage> {
   // Data source for the table
   late ToleranceDataSource _toleranceDataSource;
-
+  late ToleranceFilter _toleranceFilter;
+  bool _filterActive = false;
   // Scroll controllers for vertical and horizontal scrolling
   final ScrollController _verticalScrollController = ScrollController();
   final ScrollController _horizontalScrollController = ScrollController();
@@ -75,7 +78,8 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     super.initState();
     // Initialize data source with current unit system
     _toleranceDataSource = ToleranceDataSource(unitSystem: _currentUnit);
-
+    // Load tolerance filter
+    _loadToleranceFilter();
     // Load saved scroll position
     _loadScrollPosition();
 
@@ -91,6 +95,49 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
     // Show tooltip after a delay on first launch
     _checkFirstLaunch();
+  }
+
+  // Add this method to load the tolerance filter:
+  Future<void> _loadToleranceFilter() async {
+    try {
+      _toleranceFilter = await ToleranceFilter.load();
+      setState(() {
+        _filterActive = true;
+        // Update data source to apply filters
+        _updateDataSource();
+      });
+    } catch (e) {
+      debugPrint('Error loading tolerance filter: $e');
+      // Use defaults if loading fails
+      _toleranceFilter = ToleranceFilter.defaults();
+      setState(() {
+        _filterActive = true;
+      });
+    }
+  }
+
+  // Add this method to update the data source with filters:
+  void _updateDataSource() {
+    _toleranceDataSource = ToleranceDataSource(
+      unitSystem: _currentUnit,
+      toleranceFilter: _toleranceFilter,
+    );
+  }
+
+  // Add this method to navigate to the filter settings page:
+  void _navigateToFilterSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ToleranceFilterPage(
+              onFiltersChanged: () {
+                // When filters are changed, reload them
+                _loadToleranceFilter();
+              },
+            ),
+      ),
+    );
   }
 
   // New method to refresh grid on scroll
@@ -431,6 +478,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               case 'about':
                 _showAboutDialog();
                 break;
+              case 'filter':
+                _navigateToFilterSettings();
+                break;
             }
           },
           itemBuilder: (BuildContext context) {
@@ -584,6 +634,14 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
                           )
                           : null,
                   contentPadding: const EdgeInsets.only(left: 32),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'filter',
+                child: ListTile(
+                  leading: const Icon(Icons.filter_list),
+                  title: Text(context.t('filter_tolerances')),
+                  contentPadding: EdgeInsets.zero,
                 ),
               ),
               PopupMenuItem<String>(
@@ -785,21 +843,44 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     );
   }
 
-  // Display search page
   void _showSearchDialog() async {
-    // Get list of all tolerances (columns), excluding Interval
+    // Получаем список всех допусков (колонок), исключая Interval
     Set<String> allTolerances = {};
     _toleranceDataSource.getAllColumnNames(allTolerances);
     allTolerances.remove("Interval");
     List<String> tolerancesList = allTolerances.toList()..sort();
 
-    // Navigate to search page and wait for result
-    navigateToSearchPage(context, tolerancesList, (selectedTolerance) {
-      // When a tolerance is selected, scroll to it
-      if (selectedTolerance.isNotEmpty) {
-        _scrollToColumn(selectedTolerance);
-      }
-    });
+
+    if (_filterActive) {
+      // Получаем полный список всех возможных допусков (без фильтрации)
+      Set<String> allPossibleTolerances = {};
+
+
+      // Создаем временный источник данных без фильтра
+      ToleranceDataSource tempDataSource = ToleranceDataSource(
+        unitSystem: _currentUnit,
+        toleranceFilter: null,
+      );
+
+      tempDataSource.getAllColumnNames(allPossibleTolerances);
+      allPossibleTolerances.remove("Interval");
+
+      // Если количество допусков в отфильтрованном списке меньше общего количества,
+      // значит фильтр активен и некоторые допуски скрыты
+        }
+
+    // Переходим на страницу поиска и ждем результат
+    navigateToSearchPage(
+      context,
+      tolerancesList,
+      (selectedTolerance) {
+        // Когда допуск выбран, прокручиваем к нему
+        if (selectedTolerance.isNotEmpty) {
+          _scrollToColumn(selectedTolerance);
+        }
+      },
+   
+    );
   }
 
   // Scroll to specified column and highlight it

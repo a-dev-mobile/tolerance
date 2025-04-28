@@ -136,6 +136,35 @@ class AppLocalizations {
       'cells_clickable_tip':
           'Click on a tolerance cell to calculate dimensions.',
       'theme_units_tip': 'Theme and units settings are in the menu',
+
+      'filter_tolerances': 'Filter tolerances',
+      'filter_settings': 'Filter Settings',
+      'filter_info_title': 'Show/Hide Tolerances',
+      'filter_info_description':
+          'Select which tolerance designations you want to display in the table. Unchecked designations will be hidden.',
+      'hole_tolerances': 'Hole Tolerances',
+      'shaft_tolerances': 'Shaft Tolerances',
+      'selected_count': '\$count / \$total selected',
+      'select_all': 'Select All',
+      'deselect_all': 'Deselect All',
+      'apply': 'Apply',
+      'cancel': 'Cancel',
+      'reset': 'Reset',
+      'reset_filters': 'Reset Filters',
+      'reset_filters_confirm':
+          'Are you sure you want to reset all filters to default settings?',
+      'filter_save_error': 'Error saving filter settings',
+      'unsaved_changes': 'Unsaved Changes',
+      'discard_changes_question': 'You have unsaved changes. Discard them?',
+      'discard': 'Discard',
+      'reset_to_defaults': 'Reset to defaults',
+      'warning': 'Warning',
+      'no_tolerances_selected_warning':
+          'You haven\'t selected any tolerances. The table will be empty. Please select at least one tolerance or reset to defaults.',
+      'filter_active_warning':
+          'Filter is active! Some tolerances are hidden. To show all tolerances, go to Filter settings in the main menu.',
+          'hide_warning': 'Hide warning',
+          'filter_active_notice': 'Filter active: some tolerances are hidden',
     },
     'ru': {
       // General
@@ -248,6 +277,36 @@ class AppLocalizations {
       'cells_clickable_tip':
           'Нажмите на ячейку с допуском, чтобы рассчитать размеры.',
       'theme_units_tip': 'Настройки темы и единиц измерения находятся в меню',
+
+      'filter_tolerances': 'Фильтр допусков',
+      'filter_settings': 'Настройки фильтра',
+      'filter_info_title': 'Показать/Скрыть допуски',
+      'filter_info_description':
+          'Выберите, какие обозначения допусков вы хотите отображать в таблице. Неотмеченные обозначения будут скрыты.',
+      'hole_tolerances': 'Допуски отверстий',
+      'shaft_tolerances': 'Допуски валов',
+      'selected_count': '\$count / \$total выбрано',
+      'select_all': 'Выбрать все',
+      'deselect_all': 'Снять выбор',
+      'apply': 'Применить',
+      'cancel': 'Отмена',
+      'reset': 'Сбросить',
+      'reset_filters': 'Сбросить фильтры',
+      'reset_filters_confirm':
+          'Вы уверены, что хотите сбросить все фильтры к настройкам по умолчанию?',
+      'filter_save_error': 'Ошибка сохранения настроек фильтра',
+      'unsaved_changes': 'Несохраненные изменения',
+      'discard_changes_question':
+          'У вас есть несохраненные изменения. Отменить их?',
+      'discard': 'Отменить',
+      'reset_to_defaults': 'Сбросить к настройкам по умолчанию',
+      'warning': 'Предупреждение',
+      'no_tolerances_selected_warning':
+          'Вы не выбрали ни одного допуска. Таблица будет пустой. Пожалуйста, выберите хотя бы один допуск или сбросьте настройки.',
+      'filter_active_warning':
+          'Фильтр активен! Некоторые допуски скрыты. Чтобы показать все допуски, перейдите в настройки фильтра в главном меню.',
+          'hide_warning': 'Скрыть предупреждение',
+          'filter_active_notice': 'Фильтр активен: некоторые допуски скрыты',
     },
   };
 
