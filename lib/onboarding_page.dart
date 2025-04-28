@@ -59,6 +59,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
         icon: Icons.straighten,
         imageAsset: null,
       ),
+
+    OnboardingStep(
+      title: context.t('filter_tolerances_title'),
+      description: context.t('filter_tolerances_description'),
+      icon: Icons.filter_list,
+      imageAsset: null,
+    ),
       OnboardingStep(
         title: context.t('units_switching_title'),
         description: context.t('units_switching_description'),
