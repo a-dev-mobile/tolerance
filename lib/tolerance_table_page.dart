@@ -782,7 +782,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               ),
               const SizedBox(height: 8),
               Text(
-                context.t('version', args: {'version_number': '1.3.0'}),
+                context.t('version', args: {'version_number': '1.4.0'}),
                 style: const TextStyle(fontSize: 14),
               ),
             ],
@@ -883,55 +883,66 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     );
   }
 
-  // Scroll to specified column and highlight it
-  void _scrollToColumn(String columnName) {
-    setState(() {
-      _highlightedColumn = columnName;
-    });
+// Scroll to specified column and highlight it
+void _scrollToColumn(String columnName) {
+  setState(() {
+    _highlightedColumn = columnName;
+  });
 
-    // Use delay to give time for column rebuild with highlighting
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted) return;
+  // Use delay to give time for column rebuild with highlighting
+  Future.delayed(const Duration(milliseconds: 100), () {
+    if (!mounted) return;
 
-      // Get column index from data source
-      int columnIndex = _toleranceDataSource.getColumnIndex(columnName);
-      if (columnIndex == -1) return;
-
-      // Calculate approximate position for scrolling, accounting for column widths
-      // First column (Interval) has width 120, others 90
-      double scrollOffset = 120.0 + (columnIndex - 1) * 90.0;
-
-      // Scroll horizontally to column if controller is initialized
-      if (_horizontalScrollController.hasClients) {
-        // Subtract half of visible area to center column
-        double viewportWidth = MediaQuery.of(context).size.width;
-        double targetOffset =
-            scrollOffset - (viewportWidth / 2) + 45; // 45 - half column width
-
-        // Ensure we don't go beyond scroll limits
-        targetOffset = targetOffset.clamp(
-          0.0,
-          _horizontalScrollController.position.maxScrollExtent,
-        );
-
-        _horizontalScrollController.animateTo(
-          targetOffset,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
+    // Get the list of columns in their SORTED display order
+    List<GridColumn> columns = _buildGridColumns();
+    
+    // Find the target column index in the SORTED list
+    int visualColumnIndex = -1;
+    for (int i = 0; i < columns.length; i++) {
+      if (columns[i].columnName == columnName) {
+        visualColumnIndex = i;
+        break;
       }
+    }
+    
+    if (visualColumnIndex == -1) return; // Column not found
+    
+    // Calculate scroll offset based on column widths using the visual index
+    double scrollOffset = 0.0;
+    for (int i = 0; i < visualColumnIndex; i++) {
+      // First column (Interval) is wider than others
+      scrollOffset += (i == 0) ? 85.0 : 90.0;
+    }
 
-      // Clear highlight after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            // _highlightedColumn = null;
-          });
-        }
-      });
+    // Scroll horizontally to column if controller is initialized
+    if (_horizontalScrollController.hasClients) {
+      // Subtract half of visible area to center column
+      double viewportWidth = MediaQuery.of(context).size.width;
+      double targetOffset = scrollOffset - (viewportWidth / 2) + 45; // 45 - half column width
+
+      // Ensure we don't go beyond scroll limits
+      targetOffset = targetOffset.clamp(
+        0.0,
+        _horizontalScrollController.position.maxScrollExtent,
+      );
+
+      _horizontalScrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+
+    // Clear highlight after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          // _highlightedColumn = null;
+        });
+      }
     });
-  }
-
+  });
+}
   // Handle cell tap
   void _handleCellTap(DataGridCellTapDetails details) {
     // Handle taps only if millimeters are selected

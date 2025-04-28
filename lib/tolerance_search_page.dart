@@ -18,10 +18,11 @@ void navigateToSearchPage(
 ) {
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (context) => ToleranceSearchPage(
-        tolerances: tolerances,
-        onToleranceSelected: onSelect,
-      ),
+      builder:
+          (context) => ToleranceSearchPage(
+            tolerances: tolerances,
+            onToleranceSelected: onSelect,
+          ),
     ),
   );
 }
@@ -51,12 +52,12 @@ class _ToleranceSearchPageState extends State<ToleranceSearchPage> {
   List<String> holeTolerances = [];
   List<String> shaftTolerances = [];
   List<String> recentTolerances = [];
-late ToleranceFilter _toleranceFilter;
+  late ToleranceFilter _toleranceFilter;
   // State variables
   bool isLoading = true;
   bool showRecent = true;
   String activeCategory = 'all'; // 'all', 'holes', 'shafts'
-bool _filterActive = false; 
+  bool _filterActive = false;
   @override
   void initState() {
     super.initState();
@@ -65,31 +66,36 @@ bool _filterActive = false;
 
     // Load search history and organize tolerances
     _initializeData();
-      // Load tolerance filter
-  _loadToleranceFilter();
+    // Load tolerance filter
+    _loadToleranceFilter();
   }
 
-// 3. Добавить метод для загрузки фильтра:
-Future<void> _loadToleranceFilter() async {
-  try {
-    _toleranceFilter = await ToleranceFilter.load();
-    
-    // Проверяем, активен ли фильтр (если хотя бы один допуск не выбран)
-    bool anyHoleHidden = _toleranceFilter.holeLetters.values.any((value) => !value);
-    bool anyShaftHidden = _toleranceFilter.shaftLetters.values.any((value) => !value);
-    
-    setState(() {
-      _filterActive = anyHoleHidden || anyShaftHidden;
-    });
-  } catch (e) {
-    debugPrint('Error loading tolerance filter: $e');
-    // Используем значения по умолчанию, если загрузка не удалась
-    _toleranceFilter = ToleranceFilter.defaults();
-    setState(() {
-      _filterActive = false;
-    });
+  // 3. Добавить метод для загрузки фильтра:
+  Future<void> _loadToleranceFilter() async {
+    try {
+      _toleranceFilter = await ToleranceFilter.load();
+
+      // Проверяем, активен ли фильтр (если хотя бы один допуск не выбран)
+      bool anyHoleHidden = _toleranceFilter.holeLetters.values.any(
+        (value) => !value,
+      );
+      bool anyShaftHidden = _toleranceFilter.shaftLetters.values.any(
+        (value) => !value,
+      );
+
+      setState(() {
+        _filterActive = anyHoleHidden || anyShaftHidden;
+      });
+    } catch (e) {
+      debugPrint('Error loading tolerance filter: $e');
+      // Используем значения по умолчанию, если загрузка не удалась
+      _toleranceFilter = ToleranceFilter.defaults();
+      setState(() {
+        _filterActive = false;
+      });
+    }
   }
-}
+
   // Load data and organize tolerances
   Future<void> _initializeData() async {
     setState(() {
@@ -163,20 +169,24 @@ Future<void> _loadToleranceFilter() async {
         }
 
         // First add items from history that match
-        List<String> historyMatches = searchHistory
-            .where(
-              (tolerance) =>
-                  tolerance.contains(query) && sourceList.contains(tolerance),
-            )
-            .toList();
+        List<String> historyMatches =
+            searchHistory
+                .where(
+                  (tolerance) =>
+                      tolerance.contains(query) &&
+                      sourceList.contains(tolerance),
+                )
+                .toList();
 
         // Then add other items that match but aren't in history
-        List<String> otherMatches = sourceList
-            .where(
-              (tolerance) =>
-                  tolerance.contains(query) && !historyMatches.contains(tolerance),
-            )
-            .toList();
+        List<String> otherMatches =
+            sourceList
+                .where(
+                  (tolerance) =>
+                      tolerance.contains(query) &&
+                      !historyMatches.contains(tolerance),
+                )
+                .toList();
 
         // Combine results
         filteredTolerances = [...historyMatches, ...otherMatches];
@@ -220,45 +230,41 @@ Future<void> _loadToleranceFilter() async {
     return Column(
       children: [
         // Search Field
-  TextField(
-    controller: controller,
-    decoration: InputDecoration(
-      labelText: context.t('search_tolerance'),
-      hintText: context.t('enter_designation'),
-      prefixIcon: const Icon(Icons.search),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-    ),
-    onChanged: _filterTolerances,
-    // autofocus: true,
-  ),
-  if (_filterActive)
-    Padding(
-      padding: const EdgeInsets.only(top: 8.0, left: 4.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.filter_list,
-            size: 14,
-            color: Colors.grey.shade600,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            context.t('filter_active_notice'),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-              fontStyle: FontStyle.italic,
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: context.t('search_tolerance'),
+            hintText: context.t('enter_designation'),
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
             ),
           ),
-        ],
-      ),
-    ),
-  
-  const SizedBox(height: 16),
+          onChanged: _filterTolerances,
+          // autofocus: true,
+        ),
+        if (_filterActive)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+            child: Row(
+              children: [
+                Icon(Icons.filter_list, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  context.t('filter_active_notice'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 16),
 
         // Filter Chips for category selection
         SingleChildScrollView(
@@ -274,9 +280,10 @@ Future<void> _loadToleranceFilter() async {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       // Use white text when selected for better contrast, otherwise use primary color
-                      color: activeCategory == 'all' 
-                          ? Colors.white 
-                          : EngineeringTheme.secondaryBlue,
+                      color:
+                          activeCategory == 'all'
+                              ? Colors.white
+                              : EngineeringTheme.secondaryBlue,
                       fontSize: 14,
                     ),
                   ),
@@ -285,13 +292,15 @@ Future<void> _loadToleranceFilter() async {
                   selectedColor: EngineeringTheme.primaryBlue,
                   checkmarkColor: Colors.white,
                   // Improved background and border when not selected
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade200,
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
                   side: BorderSide(
-                    color: activeCategory == 'all'
-                        ? EngineeringTheme.primaryBlue
-                        : Theme.of(context).brightness == Brightness.dark
+                    color:
+                        activeCategory == 'all'
+                            ? EngineeringTheme.primaryBlue
+                            : Theme.of(context).brightness == Brightness.dark
                             ? Colors.grey.shade600
                             : Colors.grey.shade400,
                     width: 1.5,
@@ -305,12 +314,21 @@ Future<void> _loadToleranceFilter() async {
                       _filterTolerances(controller.text);
                     });
                   },
-                  avatar:  activeCategory != 'all'?Icon(
-                    Icons.list,
-                    color: activeCategory == 'all' ? Colors.white : EngineeringTheme.secondaryBlue,
-                    size: 18,
-                  ):null,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  avatar:
+                      activeCategory != 'all'
+                          ? Icon(
+                            Icons.list,
+                            color:
+                                activeCategory == 'all'
+                                    ? Colors.white
+                                    : EngineeringTheme.secondaryBlue,
+                            size: 18,
+                          )
+                          : null,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                 ),
               ),
 
@@ -319,7 +337,10 @@ Future<void> _loadToleranceFilter() async {
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   label: Text(
-                    context.t('holes_count', args: {'count': holeTolerances.length.toString()}),
+                    context.t(
+                      'holes_count',
+                      args: {'count': holeTolerances.length.toString()},
+                    ),
                     style: TextStyle(
                       color:
                           activeCategory == 'holes'
@@ -333,9 +354,10 @@ Future<void> _loadToleranceFilter() async {
                   checkmarkColor: Colors.white,
                   elevation: activeCategory == 'holes' ? 2 : 0,
                   shadowColor: EngineeringTheme.infoColor.withAlpha(100),
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade200,
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
                   onSelected: (selected) {
                     setState(() {
                       activeCategory = 'holes';
@@ -351,30 +373,37 @@ Future<void> _loadToleranceFilter() async {
                             : EngineeringTheme.infoColor,
                     size: 18,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                 ),
               ),
 
               // Shafts
               FilterChip(
                 label: Text(
-                  context.t('shafts_count', args: {'count': shaftTolerances.length.toString()}),
+                  context.t(
+                    'shafts_count',
+                    args: {'count': shaftTolerances.length.toString()},
+                  ),
                   style: TextStyle(
                     color:
                         activeCategory == 'shafts'
                             ? Colors.white
-                            : EngineeringTheme.errorColor,
+                            : EngineeringTheme.shaftColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 selected: activeCategory == 'shafts',
-                selectedColor: EngineeringTheme.errorColor,
+                selectedColor: EngineeringTheme.shaftColor,
+                shadowColor: EngineeringTheme.shaftColor.withAlpha(100),
                 checkmarkColor: Colors.white,
                 elevation: activeCategory == 'shafts' ? 2 : 0,
-                shadowColor: EngineeringTheme.errorColor.withAlpha(100),
-                backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                    ? Colors.grey.shade800
-                    : Colors.grey.shade200,
+                backgroundColor:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade200,
                 onSelected: (selected) {
                   setState(() {
                     activeCategory = 'shafts';
@@ -387,7 +416,7 @@ Future<void> _loadToleranceFilter() async {
                   color:
                       activeCategory == 'shafts'
                           ? Colors.white
-                          : EngineeringTheme.errorColor,
+                          : EngineeringTheme.shaftColor,
                   size: 16,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -429,7 +458,10 @@ Future<void> _loadToleranceFilter() async {
               const SizedBox(width: 8),
               Text(
                 context.t('recently_used'),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -439,12 +471,15 @@ Future<void> _loadToleranceFilter() async {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: recentTolerances.map((tolerance) {
-            // Determine if it's a hole or shaft
-            bool isHole = tolerance.isNotEmpty && tolerance[0] == tolerance[0].toUpperCase();
+          children:
+              recentTolerances.map((tolerance) {
+                // Determine if it's a hole or shaft
+                bool isHole =
+                    tolerance.isNotEmpty &&
+                    tolerance[0] == tolerance[0].toUpperCase();
 
-            return _buildToleranceChip(tolerance, isHole, isRecent: true);
-          }).toList(),
+                return _buildToleranceChip(tolerance, isHole, isRecent: true);
+              }).toList(),
         ),
 
         const Divider(height: 32),
@@ -458,7 +493,8 @@ Future<void> _loadToleranceFilter() async {
     bool isHole, {
     bool isRecent = false,
   }) {
-    final Color baseColor = isHole ? EngineeringTheme.infoColor : EngineeringTheme.errorColor;
+    final Color baseColor =
+        isHole ? EngineeringTheme.holeColor : EngineeringTheme.shaftColor;
 
     return InkWell(
       onTap: () => _selectTolerance(tolerance),
@@ -496,13 +532,15 @@ Future<void> _loadToleranceFilter() async {
   // Build the tolerance categories section
   Widget _buildToleranceCategoriesSection() {
     // Split by hole and shaft
-    List<String> holeTolerances = filteredTolerances
-        .where((t) => t.isNotEmpty && t[0] == t[0].toUpperCase())
-        .toList();
+    List<String> holeTolerances =
+        filteredTolerances
+            .where((t) => t.isNotEmpty && t[0] == t[0].toUpperCase())
+            .toList();
 
-    List<String> shaftTolerances = filteredTolerances
-        .where((t) => t.isNotEmpty && t[0] == t[0].toLowerCase())
-        .toList();
+    List<String> shaftTolerances =
+        filteredTolerances
+            .where((t) => t.isNotEmpty && t[0] == t[0].toLowerCase())
+            .toList();
 
     // Sort tolerances by prefix then by IT grade
     _sortTolerancesByNaturalOrder(holeTolerances);
@@ -536,7 +574,10 @@ Future<void> _loadToleranceFilter() async {
                 const SizedBox(width: 8),
                 Text(
                   context.t('holes').toUpperCase(),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -546,9 +587,10 @@ Future<void> _loadToleranceFilter() async {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: holeTolerances
-                .map((tolerance) => _buildToleranceChip(tolerance, true))
-                .toList(),
+            children:
+                holeTolerances
+                    .map((tolerance) => _buildToleranceChip(tolerance, true))
+                    .toList(),
           ),
 
           const SizedBox(height: 24),
@@ -561,10 +603,10 @@ Future<void> _loadToleranceFilter() async {
             margin: const EdgeInsets.symmetric(vertical: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: EngineeringTheme.errorColor.withAlpha(20),
+              color: EngineeringTheme.shaftColor.withAlpha(20),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: EngineeringTheme.errorColor.withAlpha(50),
+                color: EngineeringTheme.shaftColor.withAlpha(50),
                 width: 1,
               ),
             ),
@@ -574,12 +616,15 @@ Future<void> _loadToleranceFilter() async {
                 Icon(
                   Icons.circle,
                   size: 16,
-                  color: EngineeringTheme.errorColor,
+                  color: EngineeringTheme.shaftColor,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   context.t('shafts').toUpperCase(),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -589,9 +634,10 @@ Future<void> _loadToleranceFilter() async {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: shaftTolerances
-                .map((tolerance) => _buildToleranceChip(tolerance, false))
-                .toList(),
+            children:
+                shaftTolerances
+                    .map((tolerance) => _buildToleranceChip(tolerance, false))
+                    .toList(),
           ),
         ],
       ],
@@ -715,21 +761,22 @@ Future<void> _loadToleranceFilter() async {
                   )
                 else
                   Expanded(
-                    child: filteredTolerances.isEmpty
-                        ? _buildNoResultsWidget()
-                        : SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Recent tolerances section
-                                if (showRecent && recentTolerances.isNotEmpty)
-                                  _buildRecentTolerancesSection(),
+                    child:
+                        filteredTolerances.isEmpty
+                            ? _buildNoResultsWidget()
+                            : SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Recent tolerances section
+                                  if (showRecent && recentTolerances.isNotEmpty)
+                                    _buildRecentTolerancesSection(),
 
-                                // Tolerances by category
-                                _buildToleranceCategoriesSection(),
-                              ],
+                                  // Tolerances by category
+                                  _buildToleranceCategoriesSection(),
+                                ],
+                              ),
                             ),
-                          ),
                   ),
               ],
             ),

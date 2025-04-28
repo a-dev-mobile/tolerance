@@ -643,8 +643,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: (typeOfPart == 'hole'
-                                  ? style.infoColor
-                                  : style.errorColor)
+                                  ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor)
                               .withAlpha(20),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -654,8 +654,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                               : Icons.circle,
                           color:
                               typeOfPart == 'hole'
-                                  ? style.infoColor
-                                  : style.errorColor,
+                                   ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor,
                           size: 22,
                         ),
                       ),
@@ -674,8 +674,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                 fontWeight: FontWeight.bold,
                                 color:
                                     typeOfPart == 'hole'
-                                        ? style.infoColor
-                                        : style.errorColor,
+                                 ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -689,8 +689,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: (typeOfPart == 'hole'
-                                            ? style.infoColor
-                                            : style.errorColor)
+                                          ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor)
                                         .withAlpha(20),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
@@ -701,8 +701,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                       fontWeight: FontWeight.bold,
                                       color:
                                           typeOfPart == 'hole'
-                                              ? style.infoColor
-                                              : style.errorColor,
+                                       ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor
                                     ),
                                   ),
                                 ),
@@ -778,8 +778,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontFamily: 'RobotoMono',
                                         color:
                                             typeOfPart == 'hole'
-                                                ? style.infoColor
-                                                : style.errorColor,
+                                                       ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -792,8 +792,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontFamily: 'RobotoMono',
                                         color:
                                             typeOfPart == 'hole'
-                                                ? style.infoColor
-                                                : style.errorColor,
+                                                        ?  EngineeringTheme.holeColor
+                                  : EngineeringTheme.shaftColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),

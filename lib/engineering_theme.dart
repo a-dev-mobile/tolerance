@@ -7,28 +7,34 @@ class EngineeringTheme {
   static const Color primaryBlue = Color(0xFF0D47A1);
   static const Color secondaryBlue = Color(0xFF2196F3);
   static const Color accentOrange = Color(0xFFFF5722);
-  
+
   // Functional colors
   static const Color successColor = Color(0xFF00897B);
   static const Color infoColor = Color(0xFF0277BD);
   static const Color warningColor = Color(0xFFFF8F00);
   static const Color errorColor = Color(0xFFC62828);
   static const Color highlightColor = Color(0xFFFFD54F);
-  
+
   // Light theme colors
   static const Color lightBackground = Color(0xFFF5F7FA);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightTextPrimary = Color(0xFF263238);
   static const Color lightTextSecondary = Color(0xFF546E7A);
   static const Color lightDivider = Color(0xFFCFD8DC);
-  
+
   // Dark theme colors
   static const Color darkBackground = Color(0xFF121212);
   static const Color darkSurface = Color(0xFF1E1E1E);
   static const Color darkTextPrimary = Color(0xFFE0E0E0);
   static const Color darkTextSecondary = Color(0xFF9E9E9E);
   static const Color darkDivider = Color(0xFF424242);
-  
+
+  /// Специальный цвет для обозначения отверстий
+  static const Color holeColor = infoColor; // #0277BD
+
+  /// Специальный цвет для обозначения валов
+  static const Color shaftColor = successColor; // #00897B
+
   /// Get the appropriate text color based on brightness
   static Color getTextColor(Brightness brightness, bool isPrimary) {
     if (brightness == Brightness.light) {
@@ -37,41 +43,43 @@ class EngineeringTheme {
       return isPrimary ? darkTextPrimary : darkTextSecondary;
     }
   }
-  
+
   /// Get the appropriate background color based on brightness
   static Color getBackgroundColor(Brightness brightness) {
     return brightness == Brightness.light ? lightBackground : darkBackground;
   }
-  
+
   /// Get the appropriate surface color based on brightness
   static Color getSurfaceColor(Brightness brightness) {
     return brightness == Brightness.light ? lightSurface : darkSurface;
   }
-  
+
   /// Get the appropriate divider color based on brightness
   static Color getDividerColor(Brightness brightness) {
     return brightness == Brightness.light ? lightDivider : darkDivider;
   }
-  
+
   /// Get functional color with adjusted opacity and brightness
   static Color getFunctionalColor(
-    Color baseColor, 
-    Brightness brightness, 
-    {double opacity = 1.0, double intensity = 1.0}
-  ) {
+    Color baseColor,
+    Brightness brightness, {
+    double opacity = 1.0,
+    double intensity = 1.0,
+  }) {
     // For dark mode, make functional colors slightly lighter
     if (brightness == Brightness.dark && opacity == 1.0) {
       // Create a lighter version for dark mode
       final HSLColor hslColor = HSLColor.fromColor(baseColor);
-      final adjustedColor = hslColor.withLightness(
-        (hslColor.lightness + 0.15).clamp(0.0, 1.0)
-      ).toColor();
+      final adjustedColor =
+          hslColor
+              .withLightness((hslColor.lightness + 0.15).clamp(0.0, 1.0))
+              .toColor();
       return adjustedColor.withAlpha((opacity * 255).toInt());
     }
-    
+
     return baseColor.withAlpha((opacity * intensity * 255).toInt());
   }
-  
+
   /// Creates a light theme with engineering-specific styling
   static ThemeData lightTheme() {
     return ThemeData(
@@ -89,7 +97,7 @@ class EngineeringTheme {
       textTheme: const TextTheme(
         titleLarge: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w500, 
+          fontWeight: FontWeight.w500,
           color: lightTextPrimary,
         ),
         titleMedium: TextStyle(
@@ -134,9 +142,7 @@ class EngineeringTheme {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -144,18 +150,14 @@ class EngineeringTheme {
           foregroundColor: primaryBlue,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           side: const BorderSide(color: primaryBlue, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryBlue,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -173,27 +175,26 @@ class EngineeringTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: primaryBlue, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
         labelStyle: const TextStyle(color: lightTextSecondary),
         hintStyle: const TextStyle(color: lightTextSecondary),
       ),
       cardTheme: CardTheme(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: lightSurface,
       ),
       dialogTheme: DialogTheme(
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: lightSurface,
       ),
     );
   }
-  
+
   /// Creates a dark theme with engineering-specific styling
   static ThemeData darkTheme() {
     return ThemeData(
@@ -211,7 +212,7 @@ class EngineeringTheme {
       textTheme: const TextTheme(
         titleLarge: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w500, 
+          fontWeight: FontWeight.w500,
           color: darkTextPrimary,
         ),
         titleMedium: TextStyle(
@@ -256,9 +257,7 @@ class EngineeringTheme {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -266,18 +265,14 @@ class EngineeringTheme {
           foregroundColor: secondaryBlue,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           side: const BorderSide(color: secondaryBlue, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: secondaryBlue,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -295,27 +290,26 @@ class EngineeringTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: secondaryBlue, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
         labelStyle: const TextStyle(color: darkTextSecondary),
         hintStyle: const TextStyle(color: darkTextSecondary),
       ),
       cardTheme: CardTheme(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: darkSurface,
       ),
       dialogTheme: DialogTheme(
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: darkSurface,
       ),
     );
   }
-  
+
   /// Creates an widget styling extension for use in the application
   static EngineeringWidgetStyle widgetStyle(BuildContext context) {
     final brightness = Theme.of(context).brightness;
@@ -326,80 +320,86 @@ class EngineeringTheme {
 /// Contains styling for specific engineering widgets
 class EngineeringWidgetStyle {
   final Brightness brightness;
-  
+
   const EngineeringWidgetStyle(this.brightness);
-  
+
   /// Get the color for minimum value display
   Color get minValueColor => EngineeringTheme.getFunctionalColor(
-    EngineeringTheme.successColor, 
-    brightness
+    EngineeringTheme.successColor,
+    brightness,
   );
-  
+
   /// Get the color for maximum value display
   Color get maxValueColor => EngineeringTheme.getFunctionalColor(
-    EngineeringTheme.errorColor, 
-    brightness
+    EngineeringTheme.errorColor,
+    brightness,
   );
-  
+
   /// Get the color for nominal value display
   Color get nominalValueColor => EngineeringTheme.getFunctionalColor(
-    EngineeringTheme.infoColor, 
-    brightness
+    EngineeringTheme.infoColor,
+    brightness,
   );
-  
+
   /// Get the color for average value display
   Color get avgValueColor => EngineeringTheme.getFunctionalColor(
-    EngineeringTheme.warningColor, 
-    brightness
+    EngineeringTheme.warningColor,
+    brightness,
   );
-  
+
   /// Get the color for warning messages
   Color get warningColor => EngineeringTheme.getFunctionalColor(
-    EngineeringTheme.accentOrange, 
-    brightness
+    EngineeringTheme.accentOrange,
+    brightness,
   );
-  
+
   /// Get the background color for cards
-  Color get cardBackground => brightness == Brightness.light
-    ? Colors.grey.shade200.withAlpha(153) // 0.6 * 255 = 153
-    : Colors.grey.shade800.withAlpha(77);  // 0.3 * 255 = 77
-  
+  Color get cardBackground =>
+      brightness == Brightness.light
+          ? Colors.grey.shade200.withAlpha(153) // 0.6 * 255 = 153
+          : Colors.grey.shade800.withAlpha(77); // 0.3 * 255 = 77
+
   /// Get the background color for value rows
-  Color get valueRowBackground => brightness == Brightness.light
-    ? Colors.white.withAlpha(217)          // 0.85 * 255 = 217
-    : Colors.grey.shade900.withAlpha(77);  // 0.3 * 255 = 77
-  
-  /// Get the appropriate text color 
+  Color get valueRowBackground =>
+      brightness == Brightness.light
+          ? Colors.white.withAlpha(217) // 0.85 * 255 = 217
+          : Colors.grey.shade900.withAlpha(77); // 0.3 * 255 = 77
+
+  /// Get the appropriate text color
   Color get textPrimary => EngineeringTheme.getTextColor(brightness, true);
-  
+
   /// Get the appropriate secondary text color
   Color get textSecondary => EngineeringTheme.getTextColor(brightness, false);
-  
+
   /// Get the background color for the app
   Color get background => EngineeringTheme.getBackgroundColor(brightness);
-  
+
   /// Get the surface color for cards and dialogs
   Color get surface => EngineeringTheme.getSurfaceColor(brightness);
-  
+
   /// Get the divider color
   Color get divider => EngineeringTheme.getDividerColor(brightness);
-  
+
   /// Get the highlight color for search results
-  Color get highlight => brightness == Brightness.light 
-    ? EngineeringTheme.highlightColor.withAlpha(102)  // 0.4 * 255 = 102
-    : EngineeringTheme.highlightColor.withAlpha(77);  // 0.3 * 255 = 77
-  
+  Color get highlight =>
+      brightness == Brightness.light
+          ? EngineeringTheme.highlightColor.withAlpha(102) // 0.4 * 255 = 102
+          : EngineeringTheme.highlightColor.withAlpha(77); // 0.3 * 255 = 77
+
   /// Get the interval background color
-  Color get intervalBackground => brightness == Brightness.light
-    ? EngineeringTheme.infoColor.withAlpha(20)  // 0.08 * 255 = 20
-    : EngineeringTheme.infoColor.withAlpha(38); // 0.15 * 255 = 38
-    
+  Color get intervalBackground =>
+      brightness == Brightness.light
+          ? EngineeringTheme.infoColor.withAlpha(20) // 0.08 * 255 = 20
+          : EngineeringTheme.infoColor.withAlpha(38); // 0.15 * 255 = 38
+
   /// Get direct access to info color
   Color get infoColor => EngineeringTheme.infoColor;
-  
+
   /// Get direct access to error color
   Color get errorColor => EngineeringTheme.errorColor;
-  
+
+  get shaftColor => EngineeringTheme.shaftColor;
+
   /// Get styling for an engineering card container
   BoxDecoration getCardDecoration({Color? customColor, double opacity = 0.6}) {
     final color = customColor ?? cardBackground;
@@ -408,29 +408,35 @@ class EngineeringWidgetStyle {
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withAlpha(brightness == Brightness.light ? 20 : 51),  // 0.08, 0.2
+          color: Colors.black.withAlpha(
+            brightness == Brightness.light ? 20 : 51,
+          ), // 0.08, 0.2
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),
       ],
     );
   }
-  
+
   /// Get styling for a value row container in the tolerance calculator
   BoxDecoration getValueRowDecoration(Color accentColor) {
     return BoxDecoration(
       color: valueRowBackground,
       borderRadius: BorderRadius.circular(8),
       border: Border.all(
-        color: accentColor.withAlpha(brightness == Brightness.light ? 51 : 77),  // 0.2, 0.3
+        color: accentColor.withAlpha(
+          brightness == Brightness.light ? 51 : 77,
+        ), // 0.2, 0.3
         width: 1.5,
       ),
       boxShadow: [
         BoxShadow(
-          color: accentColor.withAlpha(brightness == Brightness.light ? 26 : 38),  // 0.1, 0.15
+          color: accentColor.withAlpha(
+            brightness == Brightness.light ? 26 : 38,
+          ), // 0.1, 0.15
           blurRadius: 3,
           offset: const Offset(0, 1),
-        )
+        ),
       ],
     );
   }

@@ -22,13 +22,13 @@ class ToleranceFilterPage extends StatefulWidget {
 
 class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
   // Filter state
-  late ToleranceFilter _filter;
+   ToleranceFilter _filter = ToleranceFilter.defaults();
   
   // Loading state
   bool _isLoading = true;
   
   // Original filter state (to detect changes)
-  late Map<String, bool> _originalState;
+  Map<String, bool> _originalState = {};
 
   @override
   void initState() {
@@ -181,9 +181,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
+               
                   child: Text(context.t('discard')),
                 ),
               ],
@@ -273,7 +271,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                           _buildSection(
                             title: context.t('shaft_tolerances'),
                             icon: Icons.circle,
-                            iconColor: style.errorColor,
+                            iconColor: EngineeringTheme.shaftColor,
                             letters: _filter.shaftLetters,
                             onToggleAll: _toggleAllShafts,
                             uppercase: false,
