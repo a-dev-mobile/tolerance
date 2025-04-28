@@ -33,7 +33,9 @@ class EngineeringTheme {
   static const Color holeColor = infoColor; // #0277BD
 
   /// Специальный цвет для обозначения валов
-  static const Color shaftColor = successColor; // #00897B
+  static const Color shaftColor =  Color(0xFFBD7F02);
+  // static const Color shaftColor =  Color(0xFFC78E4B);
+  // static const Color shaftColor =  Color(0xFFBDA602);
 
   /// Get the appropriate text color based on brightness
   static Color getTextColor(Brightness brightness, bool isPrimary) {
