@@ -92,10 +92,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
             title: Text(context.t('reset_filters')),
             content: Text(context.t('reset_filters_confirm')),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.t('cancel')),
-              ),
+             
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -166,10 +163,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                   title: Text(context.t('unsaved_changes')),
                   content: Text(context.t('discard_changes_question')),
                   actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text(context.t('cancel')),
-                    ),
+                 
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
 
@@ -290,18 +284,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                         child: Row(
                           children: [
                             // Cancel button
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                ),
-                                child: Text(context.t('cancel')),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
+                
                             // Apply button
                             Expanded(
                               child: ElevatedButton(
@@ -333,18 +316,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                                                         'no_tolerances_selected_warning',
                                                       ),
                                                     ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed:
-                                                            () =>
-                                                                Navigator.of(
-                                                                  context,
-                                                                ).pop(),
-                                                        child: Text(
-                                                          context.t('cancel'),
-                                                        ),
-                                                      ),
-                                                    ],
+                                                 
                                                   ),
                                             );
                                           } else {
