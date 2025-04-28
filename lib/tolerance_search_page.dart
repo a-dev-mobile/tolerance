@@ -33,10 +33,10 @@ class ToleranceSearchPage extends StatefulWidget {
   final Function(String) onToleranceSelected;
 
   const ToleranceSearchPage({
-    Key? key,
+    super.key,
     required this.tolerances,
     required this.onToleranceSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<ToleranceSearchPage> createState() => _ToleranceSearchPageState();

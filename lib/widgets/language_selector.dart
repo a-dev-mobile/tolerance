@@ -8,8 +8,7 @@ import '../engineering_theme.dart';
 class LanguageSelector extends StatelessWidget {
   final Function(Locale) onLocaleChanged;
 
-  const LanguageSelector({Key? key, required this.onLocaleChanged})
-    : super(key: key);
+  const LanguageSelector({super.key, required this.onLocaleChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +78,7 @@ class LanguageSelector extends StatelessWidget {
                     ),
                   ),
                 ),
-        title: Text(context.t('language_en')),
+                title: Text(context.t('language_en')),
                 trailing:
                     isEnglish
                         ? Icon(
@@ -115,7 +114,7 @@ class LanguageSelector extends StatelessWidget {
                     ),
                   ),
                 ),
-              title: Text(context.t('language_ru')),
+                title: Text(context.t('language_ru')),
                 trailing:
                     !isEnglish
                         ? Icon(

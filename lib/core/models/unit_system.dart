@@ -2,10 +2,10 @@
 // Содержит перечисление и вспомогательные функции для работы с единицами измерения
 
 // Перечисление единиц измерения
-enum UnitSystem { 
+enum UnitSystem {
   millimeters, // Миллиметры (мм)
-  inches,      // Дюймы (in)
-  microns      // Микроны (μm)
+  inches, // Дюймы (in)
+  microns, // Микроны (μm)
 }
 
 // Расширение для UnitSystem с вспомогательными методами
@@ -22,7 +22,7 @@ extension UnitSystemExtension on UnitSystem {
         return 'мкм';
     }
   }
-  
+
   // Возвращает локализованный символ единицы измерения (использовать с context.t)
   String get localizationKey {
     switch (this) {
@@ -34,7 +34,7 @@ extension UnitSystemExtension on UnitSystem {
         return 'microns';
     }
   }
-  
+
   // Возвращает количество знаков после запятой для форматирования
   int get decimalPlaces {
     switch (this) {
@@ -46,7 +46,7 @@ extension UnitSystemExtension on UnitSystem {
         return 0;
     }
   }
-  
+
   // Возвращает ключ для локализованного названия единицы измерения
   String get displayNameKey {
     switch (this) {

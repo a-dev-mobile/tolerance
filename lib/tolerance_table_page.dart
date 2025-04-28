@@ -16,7 +16,6 @@ import 'package:tolerance/tolerance_search_page.dart';
 import 'package:tolerance/value_input_page.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tolerance/widgets/language_selector.dart';
 // Import our custom theme
 // import 'engineering_theme.dart';
 // import other required files
@@ -850,11 +849,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     allTolerances.remove("Interval");
     List<String> tolerancesList = allTolerances.toList()..sort();
 
-
     if (_filterActive) {
       // Получаем полный список всех возможных допусков (без фильтрации)
       Set<String> allPossibleTolerances = {};
-
 
       // Создаем временный источник данных без фильтра
       ToleranceDataSource tempDataSource = ToleranceDataSource(
@@ -867,82 +864,79 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
       // Если количество допусков в отфильтрованном списке меньше общего количества,
       // значит фильтр активен и некоторые допуски скрыты
-        }
+    }
 
     // Переходим на страницу поиска и ждем результат
-    navigateToSearchPage(
-      context,
-      tolerancesList,
-      (selectedTolerance) {
-        // Когда допуск выбран, прокручиваем к нему
-        if (selectedTolerance.isNotEmpty) {
-          _scrollToColumn(selectedTolerance);
-        }
-      },
-   
-    );
-  }
-
-// Scroll to specified column and highlight it
-void _scrollToColumn(String columnName) {
-  setState(() {
-    _highlightedColumn = columnName;
-  });
-
-  // Use delay to give time for column rebuild with highlighting
-  Future.delayed(const Duration(milliseconds: 100), () {
-    if (!mounted) return;
-
-    // Get the list of columns in their SORTED display order
-    List<GridColumn> columns = _buildGridColumns();
-    
-    // Find the target column index in the SORTED list
-    int visualColumnIndex = -1;
-    for (int i = 0; i < columns.length; i++) {
-      if (columns[i].columnName == columnName) {
-        visualColumnIndex = i;
-        break;
-      }
-    }
-    
-    if (visualColumnIndex == -1) return; // Column not found
-    
-    // Calculate scroll offset based on column widths using the visual index
-    double scrollOffset = 0.0;
-    for (int i = 0; i < visualColumnIndex; i++) {
-      // First column (Interval) is wider than others
-      scrollOffset += (i == 0) ? 85.0 : 90.0;
-    }
-
-    // Scroll horizontally to column if controller is initialized
-    if (_horizontalScrollController.hasClients) {
-      // Subtract half of visible area to center column
-      double viewportWidth = MediaQuery.of(context).size.width;
-      double targetOffset = scrollOffset - (viewportWidth / 2) + 45; // 45 - half column width
-
-      // Ensure we don't go beyond scroll limits
-      targetOffset = targetOffset.clamp(
-        0.0,
-        _horizontalScrollController.position.maxScrollExtent,
-      );
-
-      _horizontalScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
-
-    // Clear highlight after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          // _highlightedColumn = null;
-        });
+    navigateToSearchPage(context, tolerancesList, (selectedTolerance) {
+      // Когда допуск выбран, прокручиваем к нему
+      if (selectedTolerance.isNotEmpty) {
+        _scrollToColumn(selectedTolerance);
       }
     });
-  });
-}
+  }
+
+  // Scroll to specified column and highlight it
+  void _scrollToColumn(String columnName) {
+    setState(() {
+      _highlightedColumn = columnName;
+    });
+
+    // Use delay to give time for column rebuild with highlighting
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+
+      // Get the list of columns in their SORTED display order
+      List<GridColumn> columns = _buildGridColumns();
+
+      // Find the target column index in the SORTED list
+      int visualColumnIndex = -1;
+      for (int i = 0; i < columns.length; i++) {
+        if (columns[i].columnName == columnName) {
+          visualColumnIndex = i;
+          break;
+        }
+      }
+
+      if (visualColumnIndex == -1) return; // Column not found
+
+      // Calculate scroll offset based on column widths using the visual index
+      double scrollOffset = 0.0;
+      for (int i = 0; i < visualColumnIndex; i++) {
+        // First column (Interval) is wider than others
+        scrollOffset += (i == 0) ? 85.0 : 90.0;
+      }
+
+      // Scroll horizontally to column if controller is initialized
+      if (_horizontalScrollController.hasClients) {
+        // Subtract half of visible area to center column
+        double viewportWidth = MediaQuery.of(context).size.width;
+        double targetOffset =
+            scrollOffset - (viewportWidth / 2) + 45; // 45 - half column width
+
+        // Ensure we don't go beyond scroll limits
+        targetOffset = targetOffset.clamp(
+          0.0,
+          _horizontalScrollController.position.maxScrollExtent,
+        );
+
+        _horizontalScrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      // Clear highlight after 3 seconds
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            // _highlightedColumn = null;
+          });
+        }
+      });
+    });
+  }
+
   // Handle cell tap
   void _handleCellTap(DataGridCellTapDetails details) {
     // Handle taps only if millimeters are selected

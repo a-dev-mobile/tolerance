@@ -64,7 +64,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
   double maxValueInTolerance = 500.0; // Default value
 
   // Determining part type (hole or shaft)
-  String typeOfPart = '';  // Initialize empty
+  String typeOfPart = ''; // Initialize empty
 
   // Variable for displayed tolerance value
   String displayedToleranceValue = '';
@@ -81,19 +81,21 @@ class _ValueInputPageState extends State<ValueInputPage> {
     // Determine part type
     _determinePartType();
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Now it's safe to access context.t()
     if (currentInterval.isEmpty) {
       currentInterval = context.t('interval_not_defined');
     }
-    
+
     if (typeOfPart.isEmpty) {
       typeOfPart = context.t('part_not_defined');
     }
   }
+
   // Determine part type (hole or shaft)
   void _determinePartType() {
     if (widget.columnName.isNotEmpty) {
@@ -643,7 +645,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: (typeOfPart == 'hole'
-                                  ?  EngineeringTheme.holeColor
+                                  ? EngineeringTheme.holeColor
                                   : EngineeringTheme.shaftColor)
                               .withAlpha(20),
                           borderRadius: BorderRadius.circular(8),
@@ -654,7 +656,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                               : Icons.circle,
                           color:
                               typeOfPart == 'hole'
-                                   ?  EngineeringTheme.holeColor
+                                  ? EngineeringTheme.holeColor
                                   : EngineeringTheme.shaftColor,
                           size: 22,
                         ),
@@ -674,8 +676,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                 fontWeight: FontWeight.bold,
                                 color:
                                     typeOfPart == 'hole'
-                                 ?  EngineeringTheme.holeColor
-                                  : EngineeringTheme.shaftColor
+                                        ? EngineeringTheme.holeColor
+                                        : EngineeringTheme.shaftColor,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -689,8 +691,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: (typeOfPart == 'hole'
-                                          ?  EngineeringTheme.holeColor
-                                  : EngineeringTheme.shaftColor)
+                                            ? EngineeringTheme.holeColor
+                                            : EngineeringTheme.shaftColor)
                                         .withAlpha(20),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
@@ -701,8 +703,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                       fontWeight: FontWeight.bold,
                                       color:
                                           typeOfPart == 'hole'
-                                       ?  EngineeringTheme.holeColor
-                                  : EngineeringTheme.shaftColor
+                                              ? EngineeringTheme.holeColor
+                                              : EngineeringTheme.shaftColor,
                                     ),
                                   ),
                                 ),
@@ -778,8 +780,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontFamily: 'RobotoMono',
                                         color:
                                             typeOfPart == 'hole'
-                                                       ?  EngineeringTheme.holeColor
-                                  : EngineeringTheme.shaftColor,
+                                                ? EngineeringTheme.holeColor
+                                                : EngineeringTheme.shaftColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -792,8 +794,8 @@ class _ValueInputPageState extends State<ValueInputPage> {
                                         fontFamily: 'RobotoMono',
                                         color:
                                             typeOfPart == 'hole'
-                                                        ?  EngineeringTheme.holeColor
-                                  : EngineeringTheme.shaftColor,
+                                                ? EngineeringTheme.holeColor
+                                                : EngineeringTheme.shaftColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),

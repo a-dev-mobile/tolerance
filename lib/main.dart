@@ -9,10 +9,9 @@ import 'package:tolerance/core/localization/app_localizations.dart';
 import 'package:tolerance/engineering_theme.dart';
 import 'package:tolerance/onboarding_page.dart';
 import 'package:tolerance/tolerance_table_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:tolerance/widgets/onboarding_language_page.dart';
-import 'core/localization/app_localizations.dart'; // Add this
+// Add this
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // App launch
@@ -185,7 +184,8 @@ class _MachineryToleranceAppState extends State<MachineryToleranceApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-   title: 'Tolerance Calculator', // This will be overridden by device locale settings
+      title:
+          'Tolerance Calculator', // This will be overridden by device locale settings
       // Use our custom light theme
       theme: EngineeringTheme.lightTheme(),
       // Use our custom dark theme

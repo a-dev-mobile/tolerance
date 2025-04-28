@@ -2,7 +2,6 @@
 // Allows users to filter tolerances by their letter designations
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/models/tolerance_filter.dart';
@@ -11,10 +10,7 @@ import 'engineering_theme.dart';
 class ToleranceFilterPage extends StatefulWidget {
   final Function() onFiltersChanged;
 
-  const ToleranceFilterPage({
-    Key? key, 
-    required this.onFiltersChanged,
-  }) : super(key: key);
+  const ToleranceFilterPage({super.key, required this.onFiltersChanged});
 
   @override
   State<ToleranceFilterPage> createState() => _ToleranceFilterPageState();
@@ -22,11 +18,11 @@ class ToleranceFilterPage extends StatefulWidget {
 
 class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
   // Filter state
-   ToleranceFilter _filter = ToleranceFilter.defaults();
-  
+  ToleranceFilter _filter = ToleranceFilter.defaults();
+
   // Loading state
   bool _isLoading = true;
-  
+
   // Original filter state (to detect changes)
   Map<String, bool> _originalState = {};
 
@@ -44,21 +40,14 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
 
     try {
       _filter = await ToleranceFilter.load();
-      
+
       // Store original state to detect changes
-      _originalState = {
-        ..._filter.holeLetters,
-        ..._filter.shaftLetters,
-      };
-      
+      _originalState = {..._filter.holeLetters, ..._filter.shaftLetters};
     } catch (e) {
       debugPrint('Error loading filters: $e');
       // Initialize with default values if loading fails
       _filter = ToleranceFilter.defaults();
-      _originalState = {
-        ..._filter.holeLetters,
-        ..._filter.shaftLetters,
-      };
+      _originalState = {..._filter.holeLetters, ..._filter.shaftLetters};
     }
 
     setState(() {
@@ -98,27 +87,28 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
   void _resetToDefaults() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.t('reset_filters')),
-        content: Text(context.t('reset_filters_confirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.t('cancel')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(context.t('reset_filters')),
+            content: Text(context.t('reset_filters_confirm')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.t('cancel')),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _filter = ToleranceFilter.defaults();
+                  });
+                  _saveFilters();
+                },
+
+                child: Text(context.t('reset')),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _filter = ToleranceFilter.defaults();
-              });
-              _saveFilters();
-            },
-         
-            child: Text(context.t('reset')),
-          ),
-        ],
-      ),
     );
   }
 
@@ -148,20 +138,20 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
         return true;
       }
     }
-    
+
     for (var key in _filter.shaftLetters.keys) {
       if (_filter.shaftLetters[key] != _originalState[key]) {
         return true;
       }
     }
-    
+
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
     final style = EngineeringTheme.widgetStyle(context);
-    
+
     // Determine if there are any changes to enable/disable apply button
     final hasChanges = _hasChanges();
 
@@ -171,23 +161,24 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
         if (hasChanges) {
           final result = await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
-              title: Text(context.t('unsaved_changes')),
-              content: Text(context.t('discard_changes_question')),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(context.t('cancel')),
+            builder:
+                (context) => AlertDialog(
+                  title: Text(context.t('unsaved_changes')),
+                  content: Text(context.t('discard_changes_question')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text(context.t('cancel')),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+
+                      child: Text(context.t('discard')),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-               
-                  child: Text(context.t('discard')),
-                ),
-              ],
-            ),
           );
-          
+
           // If user cancels, prevent navigation
           if (result == null || !result) {
             return false;
@@ -207,148 +198,176 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
             ),
           ],
         ),
-        body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Column(
-                children: [
-                  // Main scrollable content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Description
-                          Card(
-                            elevation: 2,
-                            margin: const EdgeInsets.only(bottom: 24),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+        body:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SafeArea(
+                  child: Column(
+                    children: [
+                      // Main scrollable content
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Description
+                              Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.only(bottom: 24),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        color: style.infoColor,
-                                        size: 20,
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline,
+                                            color: style.infoColor,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            context.t('filter_info_title'),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(height: 8),
                                       Text(
-                                        context.t('filter_info_title'),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
+                                        context.t('filter_info_description'),
+                                        style: const TextStyle(fontSize: 14),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    context.t('filter_info_description'),
-                                    style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+
+                              // Hole tolerances section
+                              _buildSection(
+                                title: context.t('hole_tolerances'),
+                                icon: Icons.radio_button_unchecked,
+                                iconColor: style.infoColor,
+                                letters: _filter.holeLetters,
+                                onToggleAll: _toggleAllHoles,
+                                uppercase: true,
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Shaft tolerances section
+                              _buildSection(
+                                title: context.t('shaft_tolerances'),
+                                icon: Icons.circle,
+                                iconColor: EngineeringTheme.shaftColor,
+                                letters: _filter.shaftLetters,
+                                onToggleAll: _toggleAllShafts,
+                                uppercase: false,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Bottom action bar
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            // Cancel button
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
                                   ),
-                                ],
+                                ),
+                                child: Text(context.t('cancel')),
                               ),
                             ),
-                          ),
-                          
-                          // Hole tolerances section
-                          _buildSection(
-                            title: context.t('hole_tolerances'),
-                            icon: Icons.radio_button_unchecked,
-                            iconColor: style.infoColor,
-                            letters: _filter.holeLetters,
-                            onToggleAll: _toggleAllHoles,
-                            uppercase: true,
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Shaft tolerances section
-                          _buildSection(
-                            title: context.t('shaft_tolerances'),
-                            icon: Icons.circle,
-                            iconColor: EngineeringTheme.shaftColor,
-                            letters: _filter.shaftLetters,
-                            onToggleAll: _toggleAllShafts,
-                            uppercase: false,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Bottom action bar
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, -2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Cancel button
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text(context.t('cancel')),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Apply button
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: hasChanges ? () {
-                              // Check if at least one tolerance is selected
-                              bool hasHoleSelected = _filter.holeLetters.values.any((selected) => selected);
-                              bool hasShaftSelected = _filter.shaftLetters.values.any((selected) => selected);
-                              
-                              if (!hasHoleSelected && !hasShaftSelected) {
-                                // Show warning if nothing is selected
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(context.t('warning')),
-                                    content: Text(context.t('no_tolerances_selected_warning')),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.of(context).pop(),
-                                        child: Text(context.t('cancel')),
-                                      ),
-                                      
-                                    ],
+                            const SizedBox(width: 16),
+                            // Apply button
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed:
+                                    hasChanges
+                                        ? () {
+                                          // Check if at least one tolerance is selected
+                                          bool hasHoleSelected = _filter
+                                              .holeLetters
+                                              .values
+                                              .any((selected) => selected);
+                                          bool hasShaftSelected = _filter
+                                              .shaftLetters
+                                              .values
+                                              .any((selected) => selected);
+
+                                          if (!hasHoleSelected &&
+                                              !hasShaftSelected) {
+                                            // Show warning if nothing is selected
+                                            showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: Text(
+                                                      context.t('warning'),
+                                                    ),
+                                                    content: Text(
+                                                      context.t(
+                                                        'no_tolerances_selected_warning',
+                                                      ),
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () =>
+                                                                Navigator.of(
+                                                                  context,
+                                                                ).pop(),
+                                                        child: Text(
+                                                          context.t('cancel'),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                            );
+                                          } else {
+                                            // Save and close if at least one tolerance is selected
+                                            _saveFilters();
+                                            Navigator.of(context).pop();
+                                          }
+                                        }
+                                        : null,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
                                   ),
-                                );
-                              } else {
-                                // Save and close if at least one tolerance is selected
-                                _saveFilters();
-                                Navigator.of(context).pop();
-                              }
-                            } : null,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                child: Text(context.t('apply')),
+                              ),
                             ),
-                            child: Text(context.t('apply')),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
       ),
     );
   }
@@ -366,7 +385,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
     final int selected = letters.values.where((v) => v).length;
     final int total = letters.length;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -383,10 +402,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: iconColor.withOpacity(0.3),
-              width: 1.5,
-            ),
+            border: Border.all(color: iconColor.withOpacity(0.3), width: 1.5),
           ),
           child: Row(
             children: [
@@ -403,7 +419,10 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
               const Spacer(),
               // Selection counter with improved styling
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -430,9 +449,9 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Select/Deselect all with improved styling
         Row(
           children: [
@@ -443,7 +462,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                 label: Text(context.t('select_all')),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12, 
+                    horizontal: 12,
                     vertical: 10,
                   ),
                   backgroundColor: iconColor.withOpacity(0.2),
@@ -467,10 +486,11 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                 label: Text(context.t('deselect_all')),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12, 
+                    horizontal: 12,
                     vertical: 10,
                   ),
-                  foregroundColor: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                  foregroundColor:
+                      isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                   side: BorderSide(
                     color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                     width: 1.5,
@@ -483,9 +503,9 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         // Tolerance letters grid
         GridView.builder(
           shrinkWrap: true,
@@ -500,7 +520,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
           itemBuilder: (context, index) {
             final letter = letters.keys.elementAt(index);
             final isSelected = letters[letter] ?? false;
-            
+
             return _buildLetterTile(
               letter: letter,
               isSelected: isSelected,
@@ -509,7 +529,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
               onChanged: (value) {
                 setState(() {
                   letters[letter] = value ?? false;
-                  
+
                   // Add haptic feedback
                   HapticFeedback.selectionClick();
                 });
@@ -529,35 +549,45 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
     required bool uppercase,
     required ValueChanged<bool?> onChanged,
   }) {
-    final displayLetter = uppercase ? letter.toUpperCase() : letter.toLowerCase();
+    final displayLetter =
+        uppercase ? letter.toUpperCase() : letter.toLowerCase();
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        gradient: isSelected ? LinearGradient(
-          colors: [
-            iconColor.withOpacity(isDark ? 0.3 : 0.2),
-            iconColor.withOpacity(isDark ? 0.15 : 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ) : null,
+        gradient:
+            isSelected
+                ? LinearGradient(
+                  colors: [
+                    iconColor.withOpacity(isDark ? 0.3 : 0.2),
+                    iconColor.withOpacity(isDark ? 0.15 : 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : null,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
-              ? iconColor 
-              : isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+          color:
+              isSelected
+                  ? iconColor
+                  : isDark
+                  ? Colors.grey.shade600
+                  : Colors.grey.shade300,
           width: isSelected ? 2.0 : 1.0,
         ),
-        boxShadow: isSelected ? [
-          BoxShadow(
-            color: iconColor.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          )
-        ] : null,
+        boxShadow:
+            isSelected
+                ? [
+                  BoxShadow(
+                    color: iconColor.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+                : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -579,18 +609,24 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: isSelected ? iconColor : isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                      color:
+                          isSelected
+                              ? iconColor
+                              : isDark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade400,
                       width: 2,
                     ),
                     color: isSelected ? iconColor : Colors.transparent,
                   ),
-                  child: isSelected 
-                      ? const Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Colors.white,
-                        )
-                      : null,
+                  child:
+                      isSelected
+                          ? const Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Colors.white,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 6),
                 Text(

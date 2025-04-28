@@ -163,12 +163,12 @@ class AppLocalizations {
           'You haven\'t selected any tolerances. The table will be empty. Please select at least one tolerance or reset to defaults.',
       'filter_active_warning':
           'Filter is active! Some tolerances are hidden. To show all tolerances, go to Filter settings in the main menu.',
-          'hide_warning': 'Hide warning',
-          'filter_active_notice': 'Filter active: some tolerances are hidden',
+      'hide_warning': 'Hide warning',
+      'filter_active_notice': 'Filter active: some tolerances are hidden',
 
-          'filter_tolerances_title': 'Filter tolerances',
-'filter_tolerances_description': 'Hide unwanted tolerances to customize your view. Access this feature from the menu in the upper right corner.',
-
+      'filter_tolerances_title': 'Filter tolerances',
+      'filter_tolerances_description':
+          'Hide unwanted tolerances to customize your view. Access this feature from the menu in the upper right corner.',
     },
     'ru': {
       // General
@@ -309,10 +309,11 @@ class AppLocalizations {
           'Вы не выбрали ни одного допуска. Таблица будет пустой. Пожалуйста, выберите хотя бы один допуск или сбросьте настройки.',
       'filter_active_warning':
           'Фильтр активен! Некоторые допуски скрыты. Чтобы показать все допуски, перейдите в настройки фильтра в главном меню.',
-          'hide_warning': 'Скрыть предупреждение',
-          'filter_active_notice': 'Фильтр активен: некоторые допуски скрыты',
-          'filter_tolerances_title': 'Фильтрация допусков',
-'filter_tolerances_description': 'Скрывайте ненужные допуски для настройки отображения. Доступ к функции - через меню в правом верхнем углу.',
+      'hide_warning': 'Скрыть предупреждение',
+      'filter_active_notice': 'Фильтр активен: некоторые допуски скрыты',
+      'filter_tolerances_title': 'Фильтрация допусков',
+      'filter_tolerances_description':
+          'Скрывайте ненужные допуски для настройки отображения. Доступ к функции - через меню в правом верхнем углу.',
     },
   };
 

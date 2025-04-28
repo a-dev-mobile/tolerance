@@ -15,42 +15,41 @@ class ToleranceDataSource extends DataGridSource {
   late List<DataGridRow> _rows;
   late List<String> _columnNames;
   final UnitSystem unitSystem; // Система единиц измерения
-    final ToleranceFilter? toleranceFilter; 
+  final ToleranceFilter? toleranceFilter;
 
-  ToleranceDataSource({
-    required this.unitSystem,
-    this.toleranceFilter,
-  }) {
+  ToleranceDataSource({required this.unitSystem, this.toleranceFilter}) {
     _initDataGridRows();
   }
 
-// Инициализация строк данных для таблицы
-void _initDataGridRows() {
-  // Используем LinkedHashSet для сохранения порядка вставки
-  Set<String> uniqueColumnNames = LinkedHashSet<String>();
-  uniqueColumnNames.add("Interval"); // Всегда первая
-  
-  // Проходим по данным в том порядке, в котором они определены в ToleranceConstants
-  ToleranceConstants.toleranceValues.forEach((interval, values) {
-    // Для каждого интервала перебираем ключи (допуски) в порядке их объявления
-    values.keys.forEach((key) {
-      // Only add columns that pass the filter or if no filter is set
-      if (key == "Interval" || toleranceFilter == null || toleranceFilter!.isVisible(key)) {
-        uniqueColumnNames.add(key);
+  // Инициализация строк данных для таблицы
+  void _initDataGridRows() {
+    // Используем LinkedHashSet для сохранения порядка вставки
+    Set<String> uniqueColumnNames = LinkedHashSet<String>();
+    uniqueColumnNames.add("Interval"); // Всегда первая
+
+    // Проходим по данным в том порядке, в котором они определены в ToleranceConstants
+    ToleranceConstants.toleranceValues.forEach((interval, values) {
+      // Для каждого интервала перебираем ключи (допуски) в порядке их объявления
+      for (var key in values.keys) {
+        // Only add columns that pass the filter or if no filter is set
+        if (key == "Interval" ||
+            toleranceFilter == null ||
+            toleranceFilter!.isVisible(key)) {
+          uniqueColumnNames.add(key);
+        }
       }
     });
-  });
 
-  // Преобразуем в список, сохраняя порядок добавления
-  _columnNames = uniqueColumnNames.toList();
-  
-  // Создаем строки данных
-  _rows = [];
+    // Преобразуем в список, сохраняя порядок добавления
+    _columnNames = uniqueColumnNames.toList();
+
+    // Создаем строки данных
+    _rows = [];
 
     ToleranceConstants.toleranceValues.forEach((intervalMm, tolerances) {
       List<DataGridCell<String>> cells = [];
       String displayInterval = intervalMm;
-      
+
       // Интервалы всегда отображаются в миллиметрах, независимо от выбранной системы единиц
       // Для каждой колонки ищем соответствующее значение
       for (String columnName in _columnNames) {
@@ -59,10 +58,11 @@ void _initDataGridRows() {
           value = displayInterval;
         } else {
           String mmValue = tolerances[columnName] ?? '';
-          
+
           // Конвертируем значения в нужные единицы
-          value = (unitSystem == UnitSystem.millimeters) 
-                  ? mmValue 
+          value =
+              (unitSystem == UnitSystem.millimeters)
+                  ? mmValue
                   : _convertValue(mmValue, unitSystem);
         }
 
@@ -73,17 +73,20 @@ void _initDataGridRows() {
     });
   }
 
-// Modify the getAllColumnNames method to filter the columns:
-void getAllColumnNames(Set<String> uniqueColumnNames) {
-  ToleranceConstants.toleranceValues.forEach((interval, values) {
-    for (var key in values.keys) {
-      // Only add columns that pass the filter or if no filter is set
-      if (key == "Interval" || toleranceFilter == null || toleranceFilter!.isVisible(key)) {
-        uniqueColumnNames.add(key);
+  // Modify the getAllColumnNames method to filter the columns:
+  void getAllColumnNames(Set<String> uniqueColumnNames) {
+    ToleranceConstants.toleranceValues.forEach((interval, values) {
+      for (var key in values.keys) {
+        // Only add columns that pass the filter or if no filter is set
+        if (key == "Interval" ||
+            toleranceFilter == null ||
+            toleranceFilter!.isVisible(key)) {
+          uniqueColumnNames.add(key);
+        }
       }
-    }
-  });}
-  
+    });
+  }
+
   // Получает индекс колонки по её имени
   int getColumnIndex(String columnName) {
     return _columnNames.indexOf(columnName);
@@ -119,20 +122,20 @@ void getAllColumnNames(Set<String> uniqueColumnNames) {
         case UnitSystem.millimeters:
           // Оставляем как есть
           return '$sign$mmValue';
-          
+
         case UnitSystem.inches:
           convertedValue = valueMm * UnitConverter.mmToInch;
           // Форматируем дюймовые значения с 5 знаками после запятой
           formattedValue = convertedValue.toStringAsFixed(toUnit.decimalPlaces);
           break;
-          
+
         case UnitSystem.microns:
           convertedValue = valueMm * UnitConverter.mmToMicron;
           // Форматируем микронные значения как целые числа
           formattedValue = convertedValue.toStringAsFixed(toUnit.decimalPlaces);
           break;
       }
-      
+
       return '$sign$formattedValue';
     } catch (e) {
       // Если конвертация не удалась, возвращаем исходное значение
@@ -146,56 +149,60 @@ void getAllColumnNames(Set<String> uniqueColumnNames) {
   @override
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
-      cells: row.getCells().map<Widget>((cell) {
-        // Особое форматирование для первой колонки с интервалами
-        bool isIntervalColumn = cell.columnName == 'Interval';
-        String cellValue = cell.value.toString();
+      cells:
+          row.getCells().map<Widget>((cell) {
+            // Особое форматирование для первой колонки с интервалами
+            bool isIntervalColumn = cell.columnName == 'Interval';
+            String cellValue = cell.value.toString();
 
-        // Для ячеек с переносом строки создаем многострочный текст
-        Widget textWidget;
-        if (cellValue.contains('\n')) {
-          textWidget = _buildSingleLineCell(cellValue, isIntervalColumn);
-        } else {
-          // Для однострочных ячеек используем FittedBox для автомасштабирования
-          textWidget = _buildSingleLineCell(cellValue, isIntervalColumn);
-        }
+            // Для ячеек с переносом строки создаем многострочный текст
+            Widget textWidget;
+            if (cellValue.contains('\n')) {
+              textWidget = _buildSingleLineCell(cellValue, isIntervalColumn);
+            } else {
+              // Для однострочных ячеек используем FittedBox для автомасштабирования
+              textWidget = _buildSingleLineCell(cellValue, isIntervalColumn);
+            }
 
-      // Определяем цвет фона ячейки в зависимости от типа колонки и единиц измерения
-      Color backgroundColor;
-      if (isIntervalColumn) {
-        backgroundColor = Colors.blue.withAlpha(38);
-      } else if (unitSystem == UnitSystem.millimeters && !isIntervalColumn) {
-        // Для кликабельных ячеек в режиме мм добавляем легкую подсветку
-        backgroundColor = Colors.green.withAlpha(15);
-      } else {
-        backgroundColor = Colors.transparent;
-      }
+            // Определяем цвет фона ячейки в зависимости от типа колонки и единиц измерения
+            Color backgroundColor;
+            if (isIntervalColumn) {
+              backgroundColor = Colors.blue.withAlpha(38);
+            } else if (unitSystem == UnitSystem.millimeters &&
+                !isIntervalColumn) {
+              // Для кликабельных ячеек в режиме мм добавляем легкую подсветку
+              backgroundColor = Colors.green.withAlpha(15);
+            } else {
+              backgroundColor = Colors.transparent;
+            }
 
-      return Container(
-        padding: const EdgeInsets.all(8.0),
-        color: backgroundColor,
-        alignment: Alignment.center,
-        // Для кликабельных ячеек (мм) добавляем эффект материала и курсор-указатель
-        child: unitSystem == UnitSystem.millimeters && !isIntervalColumn
-            ? Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: null, // Обработка тапа происходит в _handleCellTap
-                  splashColor: Colors.blue.withAlpha(30),
-                  hoverColor: Colors.blue.withAlpha(15),
-                  child: Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    alignment: Alignment.center,
-                    child: textWidget,
-                  ),
-                ),
-              )
-            : textWidget,
-      );
-    }).toList(),
-  );
-}
+            return Container(
+              padding: const EdgeInsets.all(8.0),
+              color: backgroundColor,
+              alignment: Alignment.center,
+              // Для кликабельных ячеек (мм) добавляем эффект материала и курсор-указатель
+              child:
+                  unitSystem == UnitSystem.millimeters && !isIntervalColumn
+                      ? Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap:
+                              null, // Обработка тапа происходит в _handleCellTap
+                          splashColor: Colors.blue.withAlpha(30),
+                          hoverColor: Colors.blue.withAlpha(15),
+                          child: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            alignment: Alignment.center,
+                            child: textWidget,
+                          ),
+                        ),
+                      )
+                      : textWidget,
+            );
+          }).toList(),
+    );
+  }
 
   // Создает виджет для однострочной ячейки
   Widget _buildSingleLineCell(String cellValue, bool isIntervalColumn) {
@@ -207,12 +214,13 @@ void getAllColumnNames(Set<String> uniqueColumnNames) {
           child: Text(
             cellValue,
             style: TextStyle(
-              fontWeight: isIntervalColumn ? FontWeight.bold : FontWeight.normal,
+              fontWeight:
+                  isIntervalColumn ? FontWeight.bold : FontWeight.normal,
             ),
             textAlign: TextAlign.center,
           ),
         );
-      }
+      },
     );
   }
 }

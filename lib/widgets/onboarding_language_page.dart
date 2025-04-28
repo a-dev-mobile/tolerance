@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:tolerance/core/localization/app_localizations.dart';
 import 'package:tolerance/engineering_theme.dart';
 
 class OnboardingLanguagePage extends StatelessWidget {
   final Function(Locale) onLanguageSelected;
 
-  const OnboardingLanguagePage({
-    Key? key,
-    required this.onLanguageSelected,
-  }) : super(key: key);
+  const OnboardingLanguagePage({super.key, required this.onLanguageSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +16,7 @@ class OnboardingLanguagePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              
+
               // Language icon
               Container(
                 width: 120,
@@ -35,21 +31,18 @@ class OnboardingLanguagePage extends StatelessWidget {
                   color: EngineeringTheme.primaryBlue,
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Title - use static text for initial language selection screen
               const Text(
                 'Select language / Выберите язык',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Description - use static text for initial language selection
               const Text(
                 'Choose your preferred language for the application interface.\n\nВыберите предпочтительный язык интерфейса приложения.',
@@ -59,22 +52,22 @@ class OnboardingLanguagePage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 60),
-              
+
               // Language options
               _buildLanguageOption(
-                context, 
-                'English', 
+                context,
+                'English',
                 'en',
                 () => onLanguageSelected(const Locale('en')),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildLanguageOption(
-                context, 
-                'Русский', 
+                context,
+                'Русский',
                 'ru',
                 () => onLanguageSelected(const Locale('ru')),
               ),
@@ -84,10 +77,10 @@ class OnboardingLanguagePage extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildLanguageOption(
-    BuildContext context, 
-    String languageName, 
+    BuildContext context,
+    String languageName,
     String languageCode,
     VoidCallback onTap,
   ) {
@@ -98,10 +91,7 @@ class OnboardingLanguagePage extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: EngineeringTheme.primaryBlue,
-            width: 2,
-          ),
+          border: Border.all(color: EngineeringTheme.primaryBlue, width: 2),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -120,16 +110,10 @@ class OnboardingLanguagePage extends StatelessWidget {
             const SizedBox(width: 16),
             Text(
               languageName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Spacer(),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-            ),
+            const Icon(Icons.arrow_forward_ios, size: 16),
           ],
         ),
       ),
