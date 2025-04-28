@@ -1,7 +1,7 @@
 // Updated value_input_page.dart with localization support
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tolerance/tolerance_constants.dart';
+import 'package:tolerance/core/constants/tolerance_constants.dart';
 import 'engineering_theme.dart';
 import 'core/models/unit_system.dart';
 import 'core/utils/unit_converter.dart';

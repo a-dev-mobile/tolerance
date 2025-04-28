@@ -1,10 +1,12 @@
 // tolerance_data_source.dart - Источник данных для таблицы допусков
 // Управляет данными таблицы и их отображением
 
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:tolerance/core/utils/unit_converter.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:tolerance/tolerance_constants.dart';
+import 'package:tolerance/core/constants/tolerance_constants.dart';
 import 'core/models/unit_system.dart';
 
 // Класс-источник данных для таблицы допусков
@@ -17,23 +19,25 @@ class ToleranceDataSource extends DataGridSource {
     _initDataGridRows();
   }
 
-  // Инициализация строк данных для таблицы
-  void _initDataGridRows() {
-    // Сначала определяем все уникальные колонки из данных
-    Set<String> uniqueColumnNames = {"Interval"};
-    ToleranceConstants.toleranceValues.forEach((interval, values) {
-      for (var key in values.keys) {
-        uniqueColumnNames.add(key);
-      }
+// Инициализация строк данных для таблицы
+void _initDataGridRows() {
+  // Используем LinkedHashSet для сохранения порядка вставки
+  Set<String> uniqueColumnNames = LinkedHashSet<String>();
+  uniqueColumnNames.add("Interval"); // Всегда первая
+  
+  // Проходим по данным в том порядке, в котором они определены в ToleranceConstants
+  ToleranceConstants.toleranceValues.forEach((interval, values) {
+    // Для каждого интервала перебираем ключи (допуски) в порядке их объявления
+    values.keys.forEach((key) {
+      uniqueColumnNames.add(key);
     });
+  });
 
-    _columnNames = uniqueColumnNames.toList()..sort();
-    // Перемещаем "Interval" в начало списка
-    _columnNames.remove("Interval");
-    _columnNames.insert(0, "Interval");
-
-    // Создаем строки данных
-    _rows = [];
+  // Преобразуем в список, сохраняя порядок добавления
+  _columnNames = uniqueColumnNames.toList();
+  
+  // Создаем строки данных
+  _rows = [];
 
     ToleranceConstants.toleranceValues.forEach((intervalMm, tolerances) {
       List<DataGridCell<String>> cells = [];
