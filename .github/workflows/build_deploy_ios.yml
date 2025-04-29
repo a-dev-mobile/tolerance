@@ -15,7 +15,7 @@ jobs:
     name: Build & Upload iOS
     runs-on: macos-latest
     steps:
-      # Подготовка окружения
+      # Preparation
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -37,7 +37,7 @@ jobs:
           gem install fastlane cocoapods
           flutter pub get
 
-      # Расшифровка файлов
+      # Decrypt secrets
       - name: Decrypt secrets
         run: |
           mkdir -p ios/Runner private_keys env_dart
@@ -58,7 +58,19 @@ jobs:
           gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.FILE_PASSPHRASE }}" \
           --output env_dart/prod.json env_dart/prod.json.gpg
 
-      # Генерация кода
+      # Check if files were properly decrypted
+      - name: Verify decrypted files
+        run: |
+          echo "Checking provisioning profile..."
+          ls -la ios/Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision || echo "Profile missing!"
+          
+          echo "Checking certificate..."
+          ls -la ios/Runner/certificate.p12 || echo "Certificate missing!"
+          
+          echo "Checking API key..."
+          ls -la private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 || echo "API key missing!"
+
+      # Code generation
       - name: Generate localization
         run: |
           dart pub global activate intl_utils
@@ -67,18 +79,46 @@ jobs:
       # - name: Generate code with build_runner
         # run: dart run build_runner build --delete-conflicting-outputs --release
 
-      # Подготовка iOS проекта
+      # Prepare iOS project
       - name: Prepare iOS build
         run: |
           flutter precache --ios
           cd ios && pod install && cd ..
+          
+      # Run debugging script
+      - name: Debug iOS build configuration
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+          CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
+          BUNDLE_IDENTIFIER: ${{ secrets.BUNDLE_IDENTIFIER }}
+        run: |
+          # Add debugging info
+          echo "=== Debugging iOS Build Configuration ==="
+          
+          # Check if provisioning profile exists
+          echo "Checking provisioning profile..."
+          if [ -f "ios/Runner/$PROVISIONING_PROFILE.mobileprovision" ]; then
+            echo "✅ Provisioning profile exists"
+          else
+            echo "❌ ERROR: Provisioning profile not found at ios/Runner/$PROVISIONING_PROFILE.mobileprovision"
+            echo "Files in ios/Runner directory:"
+            ls -la ios/Runner/
+          fi
+          
+          # Check environment variables
+          echo "Environment variables:"
+          echo "DEVELOPMENT_TEAM: $DEVELOPMENT_TEAM"
+          echo "PROVISIONING_PROFILE: $PROVISIONING_PROFILE"
+          echo "CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
+          echo "BUNDLE_IDENTIFIER: $BUNDLE_IDENTIFIER"
 
-      # Настройка Fastlane
+      # Configure Fastlane
       - name: Configure Fastlane
         run: |
           mkdir -p ios/fastlane
           
-          # Fastfile для сборки IPA
+          # Fastfile for building IPA
           cat > ios/fastlane/Fastfile << 'EOF'
           default_platform(:ios)
           
@@ -91,7 +131,7 @@ jobs:
             end
             
             private_lane :setup_signing do
-              # Создание временного keychain
+              # Create temporary keychain
               keychain_name = "build_keychain"
               keychain_password = ENV["KEYCHAIN_PASSWORD"]
               
@@ -106,7 +146,7 @@ jobs:
                 add_to_search_list: true
               )
               
-              # Импорт сертификата
+              # Import certificate
               import_certificate(
                 certificate_path: "Runner/certificate.p12",
                 certificate_password: ENV["P12_PASSWORD"],
@@ -114,10 +154,20 @@ jobs:
                 keychain_password: keychain_password
               )
               
-              # Установка профиля
-              install_provisioning_profile(path: "Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision")
+              # Install provisioning profile
+              profile_path = "Runner/#{ENV["PROVISIONING_PROFILE"]}.mobileprovision"
+              UI.message("Installing provisioning profile from: #{profile_path}")
+              install_provisioning_profile(path: profile_path)
               
-              # Настройка подписи
+              # Show all available provisioning profiles
+              UI.message("Available provisioning profiles:")
+              sh("ls -la ~/Library/MobileDevice/Provisioning\\ Profiles/ || echo 'No profiles directory'")
+              
+              # Configure code signing - explicitly use profile UUID
+              profile_uuid = lane_context[SharedValues::SIGH_UUID] || ENV["PROVISIONING_PROFILE"]
+              UI.message("Using provisioning profile: #{profile_uuid}")
+              
+              # Update code signing settings
               update_code_signing_settings(
                 use_automatic_signing: false,
                 path: "Runner.xcodeproj",
@@ -126,10 +176,14 @@ jobs:
                 code_sign_identity: ENV["CODE_SIGN_IDENTITY"],
                 bundle_identifier: ENV["BUNDLE_IDENTIFIER"]
               )
+              
+              # Double check project settings
+              UI.message("Project settings after update:")
+              sh("cat Runner.xcodeproj/project.pbxproj | grep -A 3 'ProvisioningStyle'")
             end
             
             private_lane :build_app_store_ipa do
-              # Сборка IPA
+              # Build IPA
               build_app(
                 workspace: "Runner.xcworkspace",
                 scheme: "Runner",
@@ -142,25 +196,26 @@ jobs:
                 include_bitcode: false,
                 include_symbols: true,
                 output_name: "app-release.ipa",
-                output_directory: "../build/ios/ipa"
+                output_directory: "../build/ios/ipa",
+                xcargs: "PROVISIONING_PROFILE_SPECIFIER='#{ENV['PROVISIONING_PROFILE']}' DEVELOPMENT_TEAM='#{ENV['DEVELOPMENT_TEAM']}'"
               )
             end
             
             private_lane :cleanup_keychain do
-              # Очистка keychain
+              # Clean up keychain
               keychain_name = "build_keychain"
               delete_keychain(name: keychain_name) if File.exist? File.expand_path("~/Library/Keychains/#{keychain_name}-db")
             end
           end
           EOF
           
-          # Appfile с идентификаторами
+          # Appfile with identifiers
           cat > ios/fastlane/Appfile << EOF
           app_identifier("${{ secrets.BUNDLE_IDENTIFIER }}")
           team_id("${{ secrets.DEVELOPMENT_TEAM }}")
           EOF
 
-      # Сборка и выгрузка IPA
+      # Build and upload IPA
       - name: Build IPA
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
@@ -170,16 +225,16 @@ jobs:
           CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
           BUNDLE_IDENTIFIER: ${{ secrets.BUNDLE_IDENTIFIER }}
         run: |
-          # Подготовка Flutter 
+          # Prepare Flutter build
           flutter build ios --release --no-codesign --dart-define-from-file=env_dart/prod.json
           
-          # Сборка через Fastlane
-          cd ios && fastlane release
+          # Build with Fastlane
+          cd ios && bundle exec fastlane release
           
-          # Проверка создания IPA
+          # Check IPA creation
           ls -la ../build/ios/ipa
 
-      # Выгрузка в TestFlight
+      # Upload to TestFlight
       - name: Upload to TestFlight
         run: |
           xcrun altool --upload-app --type ios -f build/ios/ipa/app-release.ipa \
@@ -187,7 +242,7 @@ jobs:
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
             --verbose
 
-      # Подготовка артефактов и уведомлений
+      # Prepare artifacts and notifications
       - name: Get commit info
         id: commit-info
         run: |
@@ -206,8 +261,9 @@ jobs:
           mkdir -p releases
           cp build/ios/ipa/app-release.ipa releases/ios-${{ steps.commit-info.outputs.sha }}.ipa
 
-      # Отправка уведомления в Telegram
+      # Send Telegram notification
       - name: Send Telegram notification
+        if: success()
         run: |
           cat << EOF > message.txt
           🍏 iOS Build Completed
@@ -220,13 +276,13 @@ jobs:
           TestFlight: ${{ env.APP_STORE_CONNECT_URL }}
           EOF
 
-          # Отправка текста
+          # Send text
           curl -G \
             --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
             --data-urlencode "text=$(cat message.txt)" \
             https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
           
-          # Отправка файла
+          # Send file
           curl -X POST \
             -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -F document=@"build/ios/ipa/app-release.ipa" \
