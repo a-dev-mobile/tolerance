@@ -123,7 +123,7 @@ jobs:
               )
               
               # Установка профиля
-              install_provisioning_profile(path: "Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision")
+              profile_uuid = install_provisioning_profile(path: "Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision")
               
               # Настройка подписи
               
@@ -133,6 +133,7 @@ jobs:
                 path: "Runner.xcodeproj",
                 team_id: ENV["DEVELOPMENT_TEAM"],
                 profile_name: ENV["PROVISIONING_PROFILE"],
+                profile_uuid: profile_uuid,  
                 code_sign_identity: ENV["CODE_SIGN_IDENTITY"],
                 bundle_identifier: ENV["BUNDLE_IDENTIFIER"]
               )
