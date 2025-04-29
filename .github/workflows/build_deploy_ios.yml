@@ -123,8 +123,10 @@ jobs:
               )
               
               # Установка профиля
-              profile_uuid = install_provisioning_profile(path: "Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision")
-              
+              profile_path = install_provisioning_profile(
+                   path: "Runner/#{ENV['PROVISIONING_PROFILE']}.mobileprovision"
+                 )
+              profile_uuid = File.basename(profile_path, '.mobileprovision')
               # Настройка подписи
               
               
@@ -139,7 +141,7 @@ jobs:
               )
               
               
-              
+              ENV['PROFILE_UUID'] = profile_uuid
             end
             
             private_lane :build_app_store_ipa do
@@ -152,7 +154,7 @@ jobs:
               
                 export_options: {
                   provisioningProfiles: {
-                    ENV["BUNDLE_IDENTIFIER"] => ENV["PROVISIONING_PROFILE"]
+                    ENV['BUNDLE_IDENTIFIER'] => ENV['PROFILE_UUID']
                   }
                 },
               
