@@ -26,6 +26,16 @@ jobs:
           channel: "stable"
           cache: true
 
+      # Create Gemfile for Ruby dependencies
+      - name: Create Gemfile
+        run: |
+          cat > Gemfile << 'EOF'
+          source "https://rubygems.org"
+          
+          gem "fastlane", "~> 2.219.0"
+          gem "cocoapods", "~> 1.13.0"
+          EOF
+
       - name: Setup Ruby & Fastlane
         uses: ruby/setup-ruby@v1
         with:
@@ -34,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          gem install fastlane cocoapods
+          bundle install
           flutter pub get
 
       # Decrypt secrets
@@ -83,7 +93,7 @@ jobs:
       - name: Prepare iOS build
         run: |
           flutter precache --ios
-          cd ios && pod install && cd ..
+          cd ios && bundle exec pod install && cd ..
           
       # Run debugging script
       - name: Debug iOS build configuration
@@ -100,6 +110,10 @@ jobs:
           echo "Checking provisioning profile..."
           if [ -f "ios/Runner/$PROVISIONING_PROFILE.mobileprovision" ]; then
             echo "✅ Provisioning profile exists"
+            # Get profile info
+            security cms -D -i "ios/Runner/$PROVISIONING_PROFILE.mobileprovision" > /tmp/profile.plist 2>/dev/null || echo "Could not parse profile"
+            /usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist 2>/dev/null || echo "Could not extract UUID"
+            /usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist 2>/dev/null || echo "Could not extract Name"
           else
             echo "❌ ERROR: Provisioning profile not found at ios/Runner/$PROVISIONING_PROFILE.mobileprovision"
             echo "Files in ios/Runner directory:"
@@ -163,19 +177,31 @@ jobs:
               UI.message("Available provisioning profiles:")
               sh("ls -la ~/Library/MobileDevice/Provisioning\\ Profiles/ || echo 'No profiles directory'")
               
-              # Configure code signing - explicitly use profile UUID
-              profile_uuid = lane_context[SharedValues::SIGH_UUID] || ENV["PROVISIONING_PROFILE"]
-              UI.message("Using provisioning profile: #{profile_uuid}")
+              # Get profile UUID
+              profile_uuid = nil
+              begin
+                profile_info = sh("security cms -D -i #{profile_path}", log: false)
+                temp_plist = "/tmp/profile_info.plist"
+                File.write(temp_plist, profile_info)
+                profile_uuid = sh("/usr/libexec/PlistBuddy -c 'Print :UUID' #{temp_plist}", log: false).strip
+                UI.message("Profile UUID: #{profile_uuid}")
+              rescue => ex
+                UI.error("Could not extract profile UUID: #{ex}")
+              end
               
-              # Update code signing settings
-              update_code_signing_settings(
+              # Update code signing settings with explicit UUID if available
+              signing_options = {
                 use_automatic_signing: false,
                 path: "Runner.xcodeproj",
                 team_id: ENV["DEVELOPMENT_TEAM"],
-                profile_name: ENV["PROVISIONING_PROFILE"],
                 code_sign_identity: ENV["CODE_SIGN_IDENTITY"],
                 bundle_identifier: ENV["BUNDLE_IDENTIFIER"]
-              )
+              }
+              
+              # Add profile_uuid param only if we have a UUID
+              signing_options[:provisioning_profile] = profile_uuid if profile_uuid
+              
+              update_code_signing_settings(signing_options)
               
               # Double check project settings
               UI.message("Project settings after update:")
@@ -183,21 +209,45 @@ jobs:
             end
             
             private_lane :build_app_store_ipa do
-              # Build IPA
+              # Get profile UUID for export options
+              profile_path = "Runner/#{ENV["PROVISIONING_PROFILE"]}.mobileprovision"
+              profile_uuid = nil
+              begin
+                profile_info = sh("security cms -D -i #{profile_path}", log: false)
+                temp_plist = "/tmp/profile_info.plist"
+                File.write(temp_plist, profile_info)
+                profile_uuid = sh("/usr/libexec/PlistBuddy -c 'Print :UUID' #{temp_plist}", log: false).strip
+                UI.message("Using profile UUID for export: #{profile_uuid}")
+              rescue => ex
+                UI.error("Could not extract profile UUID: #{ex}")
+              end
+              
+              # Build IPA with explicit UUID if available
+              export_options = {
+                export_method: "app-store",
+                include_bitcode: false,
+                include_symbols: true
+              }
+              
+              # Add provisioning profiles only if we have a UUID
+              if profile_uuid
+                export_options[:export_options] = {
+                  provisioningProfiles: {
+                    ENV["BUNDLE_IDENTIFIER"] => profile_uuid
+                  }
+                }
+              end
+              
+              # Add xcargs for explicit signing
+              xcargs = "DEVELOPMENT_TEAM='#{ENV['DEVELOPMENT_TEAM']}' CODE_SIGN_IDENTITY='#{ENV['CODE_SIGN_IDENTITY']}'"
+              
               build_app(
                 workspace: "Runner.xcworkspace",
                 scheme: "Runner",
-                export_method: "app-store",
-                export_options: {
-                  provisioningProfiles: {
-                    ENV["BUNDLE_IDENTIFIER"] => ENV["PROVISIONING_PROFILE"]
-                  }
-                },
-                include_bitcode: false,
-                include_symbols: true,
                 output_name: "app-release.ipa",
                 output_directory: "../build/ios/ipa",
-                xcargs: "PROVISIONING_PROFILE_SPECIFIER='#{ENV['PROVISIONING_PROFILE']}' DEVELOPMENT_TEAM='#{ENV['DEVELOPMENT_TEAM']}'"
+                xcargs: xcargs,
+                **export_options
               )
             end
             
@@ -228,7 +278,7 @@ jobs:
           # Prepare Flutter build
           flutter build ios --release --no-codesign --dart-define-from-file=env_dart/prod.json
           
-          # Build with Fastlane
+          # Build with Fastlane (using bundler explicitly)
           cd ios && bundle exec fastlane release
           
           # Check IPA creation
