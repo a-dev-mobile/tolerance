@@ -903,7 +903,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       double scrollOffset = 0.0;
       for (int i = 0; i < visualColumnIndex; i++) {
         // First column (Interval) is wider than others
-        scrollOffset += (i == 0) ? 85.0 : 90.0;
+        scrollOffset += (i == 0) ? 90.0 : 90.0;
       }
 
       // Scroll horizontally to column if controller is initialized
@@ -1050,7 +1050,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
                       : null,
             ),
             alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(6.0),
             child: Text(
               columnName == "Interval"
                   ? context.t('interval_mm') // Intervals always in mm
@@ -1067,7 +1067,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          width: columnName == "Interval" ? 85 : 90, // Column width
+          width: columnName == "Interval" ? 90 : 90, // Column width
         ),
       );
     }

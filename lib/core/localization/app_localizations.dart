@@ -247,7 +247,7 @@ class AppLocalizations {
 
       // About dialog
       'about_title': 'О программе',
-      'tolerance_reference': 'Справочник допусков и посадок',
+      'tolerance_reference': 'Справочник допусков',
       'app_description': 'Приложение для расчета размеров с учетом допусков.',
       'version': 'Версия: \$version_number',
 
