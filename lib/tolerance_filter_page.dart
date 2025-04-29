@@ -92,7 +92,6 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
             title: Text(context.t('reset_filters')),
             content: Text(context.t('reset_filters_confirm')),
             actions: [
-             
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -163,7 +162,6 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                   title: Text(context.t('unsaved_changes')),
                   content: Text(context.t('discard_changes_question')),
                   actions: [
-                 
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
 
@@ -284,7 +282,7 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                         child: Row(
                           children: [
                             // Cancel button
-                
+
                             // Apply button
                             Expanded(
                               child: ElevatedButton(
@@ -316,7 +314,6 @@ class _ToleranceFilterPageState extends State<ToleranceFilterPage> {
                                                         'no_tolerances_selected_warning',
                                                       ),
                                                     ),
-                                                 
                                                   ),
                                             );
                                           } else {

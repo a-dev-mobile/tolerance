@@ -30,10 +30,10 @@ class EngineeringTheme {
   static const Color darkDivider = Color(0xFF424242);
 
   /// Специальный цвет для обозначения отверстий
-  static const Color holeColor =  Color(0xFF0277BD); // #0277BD
+  static const Color holeColor = Color(0xFF0277BD); // #0277BD
 
   /// Специальный цвет для обозначения валов
-  static const Color shaftColor =  Color(0xFF558B2F);
+  static const Color shaftColor = Color(0xFF558B2F);
   // static const Color shaftColor =  Color(0xFF4F96C1);
   // static const Color shaftColor =  Color(0xFF3C88AE);
   // static const Color shaftColor =  Color(0xFF1A84A7);
