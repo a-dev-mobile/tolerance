@@ -26,15 +26,7 @@ jobs:
           channel: "stable"
           cache: true
 
-      # Create Gemfile for Ruby dependencies
-      - name: Create Gemfile
-        run: |
-          cat > Gemfile << 'EOF'
-          source "https://rubygems.org"
           
-          gem "fastlane", "~> 2.219.0"
-          gem "cocoapods", "~> 1.13.0"
-          EOF
 
       - name: Setup Ruby & Fastlane
         uses: ruby/setup-ruby@v1
@@ -44,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          bundle install
+          gem install fastlane cocoapods
           flutter pub get
 
       # Decrypt secrets
@@ -68,19 +60,10 @@ jobs:
           gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.FILE_PASSPHRASE }}" \
           --output env_dart/prod.json env_dart/prod.json.gpg
 
-      # Check if files were properly decrypted
-      - name: Verify decrypted files
-        run: |
-          echo "Checking provisioning profile..."
-          ls -la ios/Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision || echo "Profile missing!"
+      # Генерация кода
           
-          echo "Checking certificate..."
-          ls -la ios/Runner/certificate.p12 || echo "Certificate missing!"
           
-          echo "Checking API key..."
-          ls -la private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 || echo "API key missing!"
 
-      # Code generation
       - name: Generate localization
         run: |
           dart pub global activate intl_utils
@@ -93,39 +76,10 @@ jobs:
       - name: Prepare iOS build
         run: |
           flutter precache --ios
-          cd ios && bundle exec pod install && cd ..
+          cd ios && pod install && cd ..
           
-      # Run debugging script
-      - name: Debug iOS build configuration
-        env:
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
-          CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
-          BUNDLE_IDENTIFIER: ${{ secrets.BUNDLE_IDENTIFIER }}
-        run: |
-          # Add debugging info
-          echo "=== Debugging iOS Build Configuration ==="
           
-          # Check if provisioning profile exists
-          echo "Checking provisioning profile..."
-          if [ -f "ios/Runner/$PROVISIONING_PROFILE.mobileprovision" ]; then
-            echo "✅ Provisioning profile exists"
-            # Get profile info
-            security cms -D -i "ios/Runner/$PROVISIONING_PROFILE.mobileprovision" > /tmp/profile.plist 2>/dev/null || echo "Could not parse profile"
-            /usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist 2>/dev/null || echo "Could not extract UUID"
-            /usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist 2>/dev/null || echo "Could not extract Name"
-          else
-            echo "❌ ERROR: Provisioning profile not found at ios/Runner/$PROVISIONING_PROFILE.mobileprovision"
-            echo "Files in ios/Runner directory:"
-            ls -la ios/Runner/
-          fi
           
-          # Check environment variables
-          echo "Environment variables:"
-          echo "DEVELOPMENT_TEAM: $DEVELOPMENT_TEAM"
-          echo "PROVISIONING_PROFILE: $PROVISIONING_PROFILE"
-          echo "CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
-          echo "BUNDLE_IDENTIFIER: $BUNDLE_IDENTIFIER"
 
       # Configure Fastlane
       - name: Configure Fastlane
@@ -168,104 +122,62 @@ jobs:
                 keychain_password: keychain_password
               )
               
-              # Install provisioning profile
-              profile_path = "Runner/#{ENV["PROVISIONING_PROFILE"]}.mobileprovision"
-              UI.message("Installing provisioning profile from: #{profile_path}")
-              install_provisioning_profile(path: profile_path)
+              # Установка профиля
+              install_provisioning_profile(path: "Runner/${{ secrets.PROVISIONING_PROFILE }}.mobileprovision")
               
-              # Show all available provisioning profiles
-              UI.message("Available provisioning profiles:")
-              sh("ls -la ~/Library/MobileDevice/Provisioning\\ Profiles/ || echo 'No profiles directory'")
+              # Настройка подписи
               
-              # Get profile UUID
-              profile_uuid = nil
-              begin
-                profile_info = sh("security cms -D -i #{profile_path}", log: false)
-                temp_plist = "/tmp/profile_info.plist"
-                File.write(temp_plist, profile_info)
-                profile_uuid = sh("/usr/libexec/PlistBuddy -c 'Print :UUID' #{temp_plist}", log: false).strip
-                UI.message("Profile UUID: #{profile_uuid}")
-              rescue => ex
-                UI.error("Could not extract profile UUID: #{ex}")
-              end
               
-              # Update code signing settings with explicit UUID if available
-              signing_options = {
+              update_code_signing_settings(
                 use_automatic_signing: false,
                 path: "Runner.xcodeproj",
                 team_id: ENV["DEVELOPMENT_TEAM"],
+                profile_name: ENV["PROVISIONING_PROFILE"],
                 code_sign_identity: ENV["CODE_SIGN_IDENTITY"],
                 bundle_identifier: ENV["BUNDLE_IDENTIFIER"]
-              }
+              )
               
-              # Add profile_uuid param only if we have a UUID
-              signing_options[:provisioning_profile] = profile_uuid if profile_uuid
               
-              update_code_signing_settings(signing_options)
               
-              # Double check project settings
-              UI.message("Project settings after update:")
-              sh("cat Runner.xcodeproj/project.pbxproj | grep -A 3 'ProvisioningStyle'")
             end
             
             private_lane :build_app_store_ipa do
-              # Get profile UUID for export options
-              profile_path = "Runner/#{ENV["PROVISIONING_PROFILE"]}.mobileprovision"
-              profile_uuid = nil
-              begin
-                profile_info = sh("security cms -D -i #{profile_path}", log: false)
-                temp_plist = "/tmp/profile_info.plist"
-                File.write(temp_plist, profile_info)
-                profile_uuid = sh("/usr/libexec/PlistBuddy -c 'Print :UUID' #{temp_plist}", log: false).strip
-                UI.message("Using profile UUID for export: #{profile_uuid}")
-              rescue => ex
-                UI.error("Could not extract profile UUID: #{ex}")
-              end
-              
-              # Build IPA with explicit UUID if available
-              export_options = {
-                export_method: "app-store",
-                include_bitcode: false,
-                include_symbols: true
-              }
-              
-              # Add provisioning profiles only if we have a UUID
-              if profile_uuid
-                export_options[:export_options] = {
-                  provisioningProfiles: {
-                    ENV["BUNDLE_IDENTIFIER"] => profile_uuid
-                  }
-                }
-              end
-              
-              # Add xcargs for explicit signing
-              xcargs = "DEVELOPMENT_TEAM='#{ENV['DEVELOPMENT_TEAM']}' CODE_SIGN_IDENTITY='#{ENV['CODE_SIGN_IDENTITY']}'"
-              
+              # Сборка IPA
               build_app(
                 workspace: "Runner.xcworkspace",
                 scheme: "Runner",
+              
+                export_method: "app-store",
+              
+                export_options: {
+                  provisioningProfiles: {
+                    ENV["BUNDLE_IDENTIFIER"] => ENV["PROVISIONING_PROFILE"]
+                  }
+                },
+              
+                include_bitcode: false,
+              
+                include_symbols: true,
                 output_name: "app-release.ipa",
-                output_directory: "../build/ios/ipa",
-                xcargs: xcargs,
-                **export_options
+                output_directory: "../build/ios/ipa"
               )
             end
             
             private_lane :cleanup_keychain do
-              # Clean up keychain
+              # Очистка keychain
               keychain_name = "build_keychain"
               delete_keychain(name: keychain_name) if File.exist? File.expand_path("~/Library/Keychains/#{keychain_name}-db")
             end
           end
           EOF
           
-          # Appfile with identifiers
+          # Appfile с идентификаторами
           cat > ios/fastlane/Appfile << EOF
           app_identifier("${{ secrets.BUNDLE_IDENTIFIER }}")
           team_id("${{ secrets.DEVELOPMENT_TEAM }}")
           EOF
 
-      # Build and upload IPA
+      # Сборка и выгрузка IPA
       - name: Build IPA
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
@@ -275,16 +187,16 @@ jobs:
           CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
           BUNDLE_IDENTIFIER: ${{ secrets.BUNDLE_IDENTIFIER }}
         run: |
-          # Prepare Flutter build
+          # Подготовка Flutter 
           flutter build ios --release --no-codesign --dart-define-from-file=env_dart/prod.json
           
-          # Build with Fastlane (using bundler explicitly)
-          cd ios && bundle exec fastlane release
+          # Сборка через Fastlane
+          cd ios && fastlane release
           
-          # Check IPA creation
+          # Проверка создания IPA
           ls -la ../build/ios/ipa
 
-      # Upload to TestFlight
+      # Выгрузка в TestFlight
       - name: Upload to TestFlight
         run: |
           xcrun altool --upload-app --type ios -f build/ios/ipa/app-release.ipa \
@@ -292,7 +204,7 @@ jobs:
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
             --verbose
 
-      # Prepare artifacts and notifications
+      # Подготовка артефактов и уведомлений
       - name: Get commit info
         id: commit-info
         run: |
@@ -311,9 +223,8 @@ jobs:
           mkdir -p releases
           cp build/ios/ipa/app-release.ipa releases/ios-${{ steps.commit-info.outputs.sha }}.ipa
 
-      # Send Telegram notification
+      # Отправка уведомления в Telegram
       - name: Send Telegram notification
-        if: success()
         run: |
           cat << EOF > message.txt
           🍏 iOS Build Completed
@@ -326,13 +237,13 @@ jobs:
           TestFlight: ${{ env.APP_STORE_CONNECT_URL }}
           EOF
 
-          # Send text
+          # Отправка текста
           curl -G \
             --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
             --data-urlencode "text=$(cat message.txt)" \
             https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
           
-          # Send file
+          # Отправка файла
           curl -X POST \
             -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -F document=@"build/ios/ipa/app-release.ipa" \
