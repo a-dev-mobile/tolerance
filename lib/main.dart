@@ -184,6 +184,7 @@ class _MachineryToleranceAppState extends State<MachineryToleranceApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title:
           'Tolerance Calculator', // This will be overridden by device locale settings
       // Use our custom light theme
