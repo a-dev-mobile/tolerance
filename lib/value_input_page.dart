@@ -822,32 +822,7 @@ class _ValueInputPageState extends State<ValueInputPage> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        // Get current interval
-                        String newInterval =
-                            value.isEmpty
-                                ? context.t('interval_not_defined')
-                                : findIntervalForValue(
-                                  double.tryParse(value) ?? 0.0,
-                                );
-
-                        // Get updated tolerance value for this interval
-                        if (newInterval != context.t('interval_not_defined') &&
-                            newInterval != 'Ошибка') {
-                          displayedToleranceValue =
-                              getUpdatedToleranceForInterval(
-                                widget.toleranceValue,
-                                newInterval,
-                              );
-                        } else {
-                          displayedToleranceValue = widget.toleranceValue;
-                        }
-
-                        // Calculate values with updated tolerance
-                        calculateValues(value);
-                      });
-                    },
+              onChanged: _handleTextInput,
                     autofocus: true,
                     style: const TextStyle(
                       fontSize: 16,
@@ -1043,7 +1018,81 @@ class _ValueInputPageState extends State<ValueInputPage> {
         ),
       ),
     );
+  
+  
+  
   }
+  // Method to handle input and convert comma to dot
+void _handleTextInput(String value) {
+  // Check if the value contains comma
+  if (value.contains(',')) {
+    // Get current selection
+    final selection = controller.selection;
+    
+    // Replace all commas with dots
+    final newValue = value.replaceAll(',', '.');
+    
+    // Update the controller with replaced text
+    controller.text = newValue;
+    
+    // Try to restore cursor position after replacing comma with dot
+    // If user just added a comma, cursor should be after the new dot
+    if (selection.start > 0 && selection.baseOffset == selection.extentOffset) {
+      controller.selection = TextSelection.collapsed(offset: selection.start);
+    }
+    
+    // Calculate values with updated text
+    setState(() {
+      // Get current interval
+      String newInterval = 
+          newValue.isEmpty
+              ? context.t('interval_not_defined')
+              : findIntervalForValue(
+                double.tryParse(newValue) ?? 0.0,
+              );
+
+      // Get updated tolerance value for this interval
+      if (newInterval != context.t('interval_not_defined') &&
+          newInterval != 'Ошибка') {
+        displayedToleranceValue =
+            getUpdatedToleranceForInterval(
+              widget.toleranceValue,
+              newInterval,
+            );
+      } else {
+        displayedToleranceValue = widget.toleranceValue;
+      }
+
+      // Calculate values with updated tolerance
+      calculateValues(newValue);
+    });
+  } else {
+    setState(() {
+      // Get current interval
+      String newInterval = 
+          value.isEmpty
+              ? context.t('interval_not_defined')
+              : findIntervalForValue(
+                double.tryParse(value) ?? 0.0,
+              );
+
+      // Get updated tolerance value for this interval
+      if (newInterval != context.t('interval_not_defined') &&
+          newInterval != 'Ошибка') {
+        displayedToleranceValue =
+            getUpdatedToleranceForInterval(
+              widget.toleranceValue,
+              newInterval,
+            );
+      } else {
+        displayedToleranceValue = widget.toleranceValue;
+      }
+
+      // Calculate values with updated tolerance
+      calculateValues(value);
+    });
+  }
+}
 }
 
 // Function to navigate to value input page and calculation
