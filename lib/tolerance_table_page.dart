@@ -827,7 +827,7 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
               ),
               const SizedBox(height: 8),
               Text(
-                context.t('version', args: {'version_number': '1.4.0'}),
+                context.t('version', args: {'version_number': '1.5.0'}),
                 style: const TextStyle(fontSize: 14),
               ),
             ],
