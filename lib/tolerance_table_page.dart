@@ -885,23 +885,16 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
 
-      // Get the list of columns in their SORTED display order
-      List<GridColumn> columns = _buildGridColumns();
+    // Get the column index directly from the data source
 
-      // Find the target column index in the SORTED list
-      int visualColumnIndex = -1;
-      for (int i = 0; i < columns.length; i++) {
-        if (columns[i].columnName == columnName) {
-          visualColumnIndex = i;
-          break;
-        }
-      }
+    // This ensures we're using the same order that's used in the actual data
+    int columnIndex = _toleranceDataSource.getColumnIndex(columnName);
 
-      if (visualColumnIndex == -1) return; // Column not found
+    if (columnIndex == -1) return; // Column not found
 
-      // Calculate scroll offset based on column widths using the visual index
+    // Calculate scroll offset based on column widths
       double scrollOffset = 0.0;
-      for (int i = 0; i < visualColumnIndex; i++) {
+    for (int i = 0; i < columnIndex; i++) {
         // First column (Interval) is wider than others
         scrollOffset += (i == 0) ? 90.0 : 90.0;
       }

@@ -41,7 +41,14 @@ class ToleranceDataSource extends DataGridSource {
     });
 
     // Преобразуем в список, сохраняя порядок добавления
-    _columnNames = uniqueColumnNames.toList();
+    List<String> unsortedColumnNames = uniqueColumnNames.toList();
+    
+    // Создаем отсортированную копию, сначала удаляя "Interval"
+    _columnNames = unsortedColumnNames.where((name) => name != "Interval").toList();
+    // Сортируем буквенные обозначения допусков
+    _sortTolerancesByNaturalOrder(_columnNames);
+    // Вставляем "Interval" обратно как первую колонку
+    _columnNames.insert(0, "Interval");
 
     // Создаем строки данных
     _rows = [];
@@ -50,8 +57,7 @@ class ToleranceDataSource extends DataGridSource {
       List<DataGridCell<String>> cells = [];
       String displayInterval = intervalMm;
 
-      // Интервалы всегда отображаются в миллиметрах, независимо от выбранной системы единиц
-      // Для каждой колонки ищем соответствующее значение
+      // Перебираем колонки В ТОМ ЖЕ ПОРЯДКЕ как в _columnNames
       for (String columnName in _columnNames) {
         String value = '';
         if (columnName == "Interval") {
@@ -84,6 +90,39 @@ class ToleranceDataSource extends DataGridSource {
           uniqueColumnNames.add(key);
         }
       }
+    });
+  }
+
+  // Natural sort for tolerances like h1, h2, h3...h11 instead of h1, h11, h2...
+  void _sortTolerancesByNaturalOrder(List<String> tolerances) {
+    tolerances.sort((a, b) {
+      // Extract letter prefix (can be one or more letters)
+      RegExp letterRegex = RegExp(r'^([a-zA-Z]+)');
+      Match? matchA = letterRegex.firstMatch(a);
+      Match? matchB = letterRegex.firstMatch(b);
+
+      String prefixA = matchA?.group(1) ?? '';
+      String prefixB = matchB?.group(1) ?? '';
+
+      // If prefixes are different, sort by prefix
+      if (prefixA != prefixB) {
+        return prefixA.compareTo(prefixB);
+      }
+
+      // Extract number part
+      RegExp numRegex = RegExp(r'(\d+)');
+      Match? numMatchA = numRegex.firstMatch(a);
+      Match? numMatchB = numRegex.firstMatch(b);
+
+      // If we can extract numbers from both, sort numerically
+      if (numMatchA != null && numMatchB != null) {
+        int numA = int.parse(numMatchA.group(1) ?? '0');
+        int numB = int.parse(numMatchB.group(1) ?? '0');
+        return numA.compareTo(numB);
+      }
+
+      // Fallback to standard string comparison
+      return a.compareTo(b);
     });
   }
 
