@@ -71,6 +71,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
   // Variable to track AppBar visibility
   bool _isAppBarVisible = true;
+  
+  // Variable to track FAB visibility
+  bool _isFabVisible = true;
 
   @override
   void initState() {
@@ -91,6 +94,10 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
 
     // Add listener for scroll refresh
     _verticalScrollController.addListener(_refreshOnScroll);
+    
+    // Add listeners for FAB visibility
+    _horizontalScrollController.addListener(_checkFabVisibility);
+    _verticalScrollController.addListener(_checkFabVisibility);
 
     // Show tooltip after a delay on first launch
     _checkFirstLaunch();
@@ -171,6 +178,38 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
       }
     }
   }
+  
+  // Method to check if FAB should be visible based on scroll position
+  void _checkFabVisibility() {
+    if (!_verticalScrollController.hasClients || !_horizontalScrollController.hasClients) {
+      return;
+    }
+    
+    // Get current scroll positions
+    final verticalPosition = _verticalScrollController.offset;
+    final horizontalPosition = _horizontalScrollController.offset;
+    
+    // Get maximum scroll extents (how far we can scroll)
+    final verticalMax = _verticalScrollController.position.maxScrollExtent;
+    final horizontalMax = _horizontalScrollController.position.maxScrollExtent;
+    
+    // Check if we're close to the bottom right corner
+    // We consider "close" to be when we're within 95% of the maximum scroll extent
+    final nearBottomRight = 
+        verticalPosition > verticalMax * 0.99 && 
+        horizontalPosition > horizontalMax * 0.999;
+    
+    // Update FAB visibility if necessary
+    if (nearBottomRight && _isFabVisible) {
+      setState(() {
+        _isFabVisible = false;
+      });
+    } else if (!nearBottomRight && !_isFabVisible) {
+      setState(() {
+        _isFabVisible = true;
+      });
+    }
+  }
 
   // Check if this is the first launch to show tooltip
   Future<void> _checkFirstLaunch() async {
@@ -235,6 +274,9 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
             setState(() {
               _scrollPositionRestored = true;
             });
+            
+            // Check FAB visibility after restoring scroll position
+            _checkFabVisibility();
           }
         });
       } else {
@@ -294,6 +336,8 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     _horizontalScrollController.removeListener(_saveScrollPosition);
     _verticalScrollController.removeListener(_handleScroll);
     _verticalScrollController.removeListener(_refreshOnScroll);
+    _horizontalScrollController.removeListener(_checkFabVisibility);
+    _verticalScrollController.removeListener(_checkFabVisibility);
 
     // Free resources
     _verticalScrollController.dispose();
@@ -394,12 +438,14 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
           ],
         ),
       ),
-      // Floating action button for quick search
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showSearchDialog,
-        backgroundColor: EngineeringTheme.primaryBlue,
-        child: const Icon(Icons.search),
-      ),
+      // Floating action button for quick search (with visibility control)
+      floatingActionButton: _isFabVisible 
+          ? FloatingActionButton(
+              onPressed: _showSearchDialog,
+              backgroundColor: EngineeringTheme.primaryBlue,
+              child: const Icon(Icons.search),
+            )
+          : null,
     );
   }
 
