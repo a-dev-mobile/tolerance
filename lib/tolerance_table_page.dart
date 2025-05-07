@@ -1114,39 +1114,43 @@ class _ToleranceTablePageState extends State<ToleranceTablePage> {
     return columns;
   }
 
-  // Добавить новый метод для естественной сортировки колонок
-  // Используем тот же алгоритм, что есть в tolerance_search_page.dart
-  void _sortTolerancesByNaturalOrder(List<String> tolerances) {
-    tolerances.sort((a, b) {
-      // Extract letter prefix (can be one or more letters)
-      RegExp letterRegex = RegExp(r'^([a-zA-Z]+)');
-      Match? matchA = letterRegex.firstMatch(a);
-      Match? matchB = letterRegex.firstMatch(b);
-
-      String prefixA = matchA?.group(1) ?? '';
-      String prefixB = matchB?.group(1) ?? '';
-
-      // If prefixes are different, sort by prefix
-      if (prefixA != prefixB) {
-        return prefixA.compareTo(prefixB);
-      }
-
-      // Extract number part
-      RegExp numRegex = RegExp(r'(\d+)');
-      Match? numMatchA = numRegex.firstMatch(a);
-      Match? numMatchB = numRegex.firstMatch(b);
-
-      // If we can extract numbers from both, sort numerically
-      if (numMatchA != null && numMatchB != null) {
-        int numA = int.parse(numMatchA.group(1) ?? '0');
-        int numB = int.parse(numMatchB.group(1) ?? '0');
-        return numA.compareTo(numB);
-      }
-
-      // Fallback to standard string comparison
-      return a.compareTo(b);
-    });
-  }
+  //  сортировки колонок
+void _sortTolerancesByNaturalOrder(List<String> tolerances) {
+  tolerances.sort((a, b) {
+    // Extract letter prefix and number part for both designations
+    RegExp letterRegex = RegExp(r'^([a-zA-Z]+)');
+    RegExp numRegex = RegExp(r'(\d+)');
+    
+    Match? matchA = letterRegex.firstMatch(a);
+    Match? matchB = letterRegex.firstMatch(b);
+    Match? numMatchA = numRegex.firstMatch(a);
+    Match? numMatchB = numRegex.firstMatch(b);
+    
+    String prefixA = matchA?.group(1) ?? '';
+    String prefixB = matchB?.group(1) ?? '';
+    
+    // Convert prefixes to lowercase for comparison to group same letters
+    String lowerPrefixA = prefixA.toLowerCase();
+    String lowerPrefixB = prefixB.toLowerCase();
+    
+    // If lowercase prefixes are different, sort by lowercase prefix
+    if (lowerPrefixA != lowerPrefixB) {
+      return lowerPrefixA.compareTo(lowerPrefixB);
+    }
+    
+    // If the same letter (ignoring case), extract numbers
+    int numA = numMatchA != null ? int.parse(numMatchA.group(1) ?? '0') : 0;
+    int numB = numMatchB != null ? int.parse(numMatchB.group(1) ?? '0') : 0;
+    
+    // If numerical parts are different, sort by numerical value
+    if (numA != numB) {
+      return numA.compareTo(numB);
+    }
+    
+    // If same letter and number, uppercase comes before lowercase
+    return a.compareTo(b);
+  });
+}
 }
 
 // Custom painter for engineering background
